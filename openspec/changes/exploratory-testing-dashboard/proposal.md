@@ -22,6 +22,6 @@ Testers currently lack a dedicated tool for exploratory testing that follows a s
 ## Impact
 
 - **New Database Schema**: Requires tables for sessions, logs, and artifacts.
-- **Frontend**: A new React or similar SPA for the dashboard.
+- **Frontend**: A new Angular SPA for the dashboard.
 - **Backend**: New API endpoints for session management and artifact ingestion.
 - **Machine Integration**: A mechanism (API/Client) for the machine under test to push artifacts.
