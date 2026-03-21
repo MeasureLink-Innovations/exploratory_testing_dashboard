@@ -152,6 +152,10 @@ specs/
 extensions/
 .pi/
 .gemini/
+.beads/
+.omp/
+.runtime/
+CLAUDE.md
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/angular
