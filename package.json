@@ -5,5 +5,11 @@
   "description": "Pi Coding Agent extension playground",
   "dependencies": {
     "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  },
+  "scripts": {
+    "test": "playwright test"
   }
 }
