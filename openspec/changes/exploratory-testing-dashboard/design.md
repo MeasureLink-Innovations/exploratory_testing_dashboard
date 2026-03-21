@@ -20,18 +20,21 @@ Currently, exploratory testing is often unstructured or documented in disconnect
 ### Backend: Node.js with Express
 - **Rationale**: Fast to develop, excellent support for REST APIs and file uploads.
 
-### Frontend: React with Tailwind CSS
-- **Rationale**: Modern UI library for a responsive dashboard. Tailwind for rapid styling.
+### Frontend: Angular with Tailwind CSS
+- **Rationale**: Robust, full-featured framework for enterprise-grade dashboards. Tailwind for rapid styling and layout.
 
 ### Database: PostgreSQL
 - **Rationale**: Reliable relational database.
 - **Schema**:
   - `sessions`: id, title, mission, charter, status, start_time, end_time.
-  - `logs`: id, session_id, timestamp, content, category (note, finding, issue).
-  - `artifacts`: id, session_id, name, type, data (BYTEA), created_at.
+  - `logs`: id, session_id, timestamp, content, category (note, finding, issue), author (tester, machine).
+  - `artifacts`: id, session_id, name, type (log, measurement, screenshot), data (BYTEA), metadata (JSONB for measurements), created_at.
 
 ### Artifact Storage: In-Database (BYTEA)
 - **Rationale**: The user specifically requested all data and artifacts be stored in the database. PostgreSQL's `BYTEA` column will be used for binary data.
+  - **Log Files, Measurements, Screenshots**: All stored as binary blobs.
+  - **Download Focus**: The primary interaction for artifacts is discovery and download for external analysis.
+  - **Preview**: Basic thumbnails for image artifacts (screenshots) will be generated for quick visual identification.
 - **Alternative**: S3 or local file system (rejected per user requirement).
 
 ### Communication: REST API
