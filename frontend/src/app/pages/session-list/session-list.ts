@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, EffectRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
@@ -20,21 +20,35 @@ import { InputComponent } from '../../components/input/input';
   ],
   template: `
     <div class="space-y-6">
-      <div class="flex justify-between items-center">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 class="text-2xl font-bold text-gray-900">Testing Sessions</h2>
-        <app-button (onClick)="openCreateModal()">New Session</app-button>
+        <div class="flex w-full sm:w-auto space-x-2">
+           <app-input 
+            placeholder="Search title or machine..." 
+            [value]="searchQuery()"
+            (valueChange)="searchQuery.set($event)"
+            class="w-full sm:w-64"
+          />
+          <app-button (onClick)="openCreateModal()">New Session</app-button>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         @for (session of sessions(); track session.id) {
           <app-card [title]="session.title">
             <div class="space-y-2">
-              <div class="flex justify-between">
+              <div class="flex justify-between items-center">
                 <span class="text-sm font-medium text-gray-500">Status:</span>
-                <span [class]="'px-2 py-0.5 rounded text-xs font-semibold ' + statusClasses(session.status)">
+                <span [class]="'px-2 py-0.5 rounded text-xs font-semibold uppercase ' + statusClasses(session.status)">
                   {{ session.status }}
                 </span>
               </div>
+              @if (session.machine_name) {
+                <div class="flex justify-between items-center">
+                  <span class="text-sm font-medium text-gray-500">Machine:</span>
+                  <span class="text-sm text-gray-700 italic">{{ session.machine_name }}</span>
+                </div>
+              }
               <p class="text-sm text-gray-600 line-clamp-2">{{ session.mission }}</p>
             </div>
             <div footer class="px-4 py-3 bg-gray-50 text-right sm:px-6">
@@ -74,6 +88,12 @@ import { InputComponent } from '../../components/input/input';
             [value]="newSession().charter"
             (valueChange)="updateNewSession('charter', $event)"
           />
+           <app-input 
+            label="Machine Name (Optional)" 
+            placeholder="e.g. Test-VM-01" 
+            [value]="newSession().machine_name"
+            (valueChange)="updateNewSession('machine_name', $event)"
+          />
         </div>
         <div footer>
           <app-button variant="secondary" (onClick)="isModalOpen.set(false)">Cancel</app-button>
@@ -88,20 +108,27 @@ export class SessionListComponent implements OnInit {
   
   sessions = signal<any[]>([]);
   isModalOpen = signal(false);
-  newSession = signal({ title: '', mission: '', charter: '' });
+  newSession = signal({ title: '', mission: '', charter: '', machine_name: '' });
+  searchQuery = signal('');
 
-  ngOnInit() {
-    this.loadSessions();
+  constructor() {
+    effect(() => {
+      this.loadSessions(this.searchQuery());
+    });
   }
 
-  loadSessions() {
-    this.api.getSessions().subscribe(sessions => {
+  ngOnInit() {
+    // initial load handled by effect
+  }
+
+  loadSessions(query?: string) {
+    this.api.getSessions(query).subscribe(sessions => {
       this.sessions.set(sessions);
     });
   }
 
   openCreateModal() {
-    this.newSession.set({ title: '', mission: '', charter: '' });
+    this.newSession.set({ title: '', mission: '', charter: '', machine_name: '' });
     this.isModalOpen.set(true);
   }
 
@@ -117,13 +144,14 @@ export class SessionListComponent implements OnInit {
   createSession() {
     this.api.createSession(this.newSession()).subscribe(() => {
       this.isModalOpen.set(false);
-      this.loadSessions();
+      this.loadSessions(this.searchQuery());
     });
   }
 
   statusClasses(status: string) {
     switch (status) {
       case 'in-progress': return 'bg-green-100 text-green-800';
+      case 'debriefing': return 'bg-yellow-100 text-yellow-800';
       case 'completed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-blue-100 text-blue-800';
     }

@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   title VARCHAR(255) NOT NULL,
   mission TEXT NOT NULL,
   charter TEXT NOT NULL,
-  status VARCHAR(50) DEFAULT 'planned', -- planned, in-progress, completed
+  machine_name VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'planned', -- planned, in-progress, debriefing, completed
   start_time TIMESTAMP,
   end_time TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -27,4 +28,10 @@ CREATE TABLE IF NOT EXISTS artifacts (
   data BYTEA NOT NULL,
   metadata JSONB DEFAULT '{}',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS log_artifacts (
+  log_id INTEGER REFERENCES logs(id) ON DELETE CASCADE,
+  artifact_id INTEGER REFERENCES artifacts(id) ON DELETE CASCADE,
+  PRIMARY KEY (log_id, artifact_id)
 );
