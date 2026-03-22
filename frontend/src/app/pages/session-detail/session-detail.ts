@@ -12,7 +12,8 @@ import { ModalComponent } from '../../components/modal/modal';
   standalone: true,
   imports: [CommonModule, RouterLink, ButtonComponent, CardComponent, InputComponent, ModalComponent],
   template: `
-    <div class="space-y-6" @if (session()) {
+    <div class="space-y-6">
+    @if (session()) {
       <div class="flex justify-between items-start">
         <div>
           <nav class="flex mb-2" aria-label="Breadcrumb">
@@ -59,11 +60,11 @@ import { ModalComponent } from '../../components/modal/modal';
               </div>
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase">Start Time</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ session()?.start_time | date:'medium' || 'Not started' }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ (session()?.start_time | date:'medium') || 'Not started' }}</dd>
               </div>
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase">End Time</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ session()?.end_time | date:'medium' || 'N/A' }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ (session()?.end_time | date:'medium') || 'N/A' }}</dd>
               </div>
             </dl>
           </app-card>
