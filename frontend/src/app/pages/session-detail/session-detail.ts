@@ -36,6 +36,15 @@ import { ModalComponent } from '../../components/modal/modal';
                 Read-Only
               </div>
             }
+            @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
+              <button 
+                (click)="isDebriefingMode.set(!isDebriefingMode())"
+                [class]="'flex items-center px-3 py-1 rounded-full text-sm font-medium border transition-all ' + (isDebriefingMode() ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50')"
+              >
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                Debriefing Mode
+              </button>
+            }
           </div>
         </div>
         
@@ -50,45 +59,47 @@ import { ModalComponent } from '../../components/modal/modal';
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Sidebar: Info -->
-        <div class="lg:col-span-1 space-y-6">
-          <app-card title="Charter (Scope & Approach)">
-            <p class="text-sm text-gray-600">{{ session()?.charter }}</p>
-          </app-card>
-          
-          <app-card title="Mission (Specific Goal)">
-            <p class="text-sm text-gray-600">{{ session()?.mission }}</p>
-          </app-card>
+      <div [class]="isDebriefingMode() ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'">
+        <!-- Sidebar: Info (Hidden in Debriefing Mode to save space) -->
+        @if (!isDebriefingMode()) {
+          <div class="lg:col-span-1 space-y-6">
+            <app-card title="Charter (Scope & Approach)">
+              <p class="text-sm text-gray-600">{{ session()?.charter }}</p>
+            </app-card>
+            
+            <app-card title="Mission (Specific Goal)">
+              <p class="text-sm text-gray-600">{{ session()?.mission }}</p>
+            </app-card>
 
-          <app-card title="Details">
-            <dl class="grid grid-cols-1 gap-x-4 gap-y-4">
-              <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase">Status</dt>
-                <dd class="mt-1 text-sm font-semibold uppercase tracking-wider" [class]="statusColor(session()?.status)">{{ session()?.status }}</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase">Timebox</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ session()?.duration_minutes }} minutes</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase">Machine Name</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ session()?.machine_name || 'N/A' }}</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase">Start Time</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ (session()?.start_time | date:'medium') || 'Not started' }}</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase">End Time</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ (session()?.end_time | date:'medium') || 'N/A' }}</dd>
-              </div>
-            </dl>
-          </app-card>
-        </div>
+            <app-card title="Details">
+              <dl class="grid grid-cols-1 gap-x-4 gap-y-4">
+                <div>
+                  <dt class="text-xs font-medium text-gray-500 uppercase">Status</dt>
+                  <dd class="mt-1 text-sm font-semibold uppercase tracking-wider" [class]="statusColor(session()?.status)">{{ session()?.status }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-gray-500 uppercase">Timebox</dt>
+                  <dd class="mt-1 text-sm text-gray-900">{{ session()?.duration_minutes }} minutes</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-gray-500 uppercase">Machine Name</dt>
+                  <dd class="mt-1 text-sm text-gray-900">{{ session()?.machine_name || 'N/A' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-gray-500 uppercase">Start Time</dt>
+                  <dd class="mt-1 text-sm text-gray-900">{{ (session()?.start_time | date:'medium') || 'Not started' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-gray-500 uppercase">End Time</dt>
+                  <dd class="mt-1 text-sm text-gray-900">{{ (session()?.end_time | date:'medium') || 'N/A' }}</dd>
+                </div>
+              </dl>
+            </app-card>
+          </div>
+        }
 
         <!-- Main: Logs & Artifacts -->
-        <div class="lg:col-span-2 space-y-6">
+        <div [class]="isDebriefingMode() ? 'lg:col-span-1 space-y-6' : 'lg:col-span-2 space-y-6'">
           <!-- Debrief Summary -->
           @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
             <app-card title="Briefing / Debrief Summary">
@@ -176,7 +187,7 @@ import { ModalComponent } from '../../components/modal/modal';
                           @if (log.artifacts && log.artifacts.length > 0) {
                             <div class="flex flex-wrap gap-2">
                               @for (art of log.artifacts; track art.id) {
-                                <div (click)="downloadArtifact(art)" class="flex items-center space-x-1 px-2 py-0.5 border border-gray-200 rounded text-xs text-gray-600 hover:bg-gray-50 cursor-pointer">
+                                <div (click)="openPreview(art)" class="flex items-center space-x-1 px-2 py-0.5 border border-gray-200 rounded text-xs text-gray-600 hover:bg-gray-50 cursor-pointer">
                                   <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                                   <span>{{ art.name }}</span>
                                 </div>
@@ -208,7 +219,10 @@ import { ModalComponent } from '../../components/modal/modal';
               }
             </div>
           </app-card>
+        </div>
 
+        <!-- Artifacts Panel (Side-by-side in Debriefing Mode) -->
+        <div [class]="isDebriefingMode() ? 'lg:col-span-1 space-y-6' : 'lg:col-span-2 space-y-6 lg:col-start-2'">
           <!-- Artifacts -->
           <app-card title="Artifacts">
             <div class="flex flex-col space-y-4 mb-4">
@@ -256,7 +270,7 @@ import { ModalComponent } from '../../components/modal/modal';
               </div>
             </div>
             
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div [class]="isDebriefingMode() ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : 'grid grid-cols-2 sm:grid-cols-4 gap-4'">
               @for (art of filteredArtifacts(); track art.id) {
                 <div class="group relative flex flex-col items-center p-2 border border-gray-100 rounded hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer" [class.bg-blue-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
                   @if (isImage(art.name)) {
@@ -270,15 +284,20 @@ import { ModalComponent } from '../../components/modal/modal';
                   }
                   <span class="text-[10px] text-gray-700 truncate w-full text-center px-1" [title]="art.name">{{ art.name }}</span>
                   
-                  <!-- Metadata tooltip on hover -->
-                  <div class="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded shadow-lg z-10 pointer-events-none">
-                    <p class="font-bold border-b border-gray-700 pb-1 mb-1 truncate">{{ art.name }}</p>
-                    <p>Type: {{ art.type }}</p>
-                    <p>Uploaded: {{ art.created_at | date:'short' }}</p>
-                    @if (art.metadata?.original_zip) {
-                      <p class="text-blue-300">From: {{ art.metadata.original_zip }}</p>
-                    }
+                  <div class="flex mt-2 w-full justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button (click)="$event.stopPropagation(); openPreview(art)" class="p-1 text-blue-600 hover:bg-blue-100 rounded" title="Preview">
+                      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                    <button (click)="$event.stopPropagation(); downloadArtifact(art)" class="p-1 text-gray-600 hover:bg-gray-100 rounded" title="Download">
+                      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </button>
                   </div>
+
+                  @if (getLinkedLogsForArtifact(art.id).length > 0) {
+                    <div class="absolute top-1 left-1 h-4 w-4 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm" [title]="getLinkedLogsForArtifact(art.id).length + ' linked logs'">
+                      L
+                    </div>
+                  }
 
                   @if (isArtifactSelected(art.id)) {
                     <div class="absolute top-1 right-1 h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm">✓</div>
@@ -291,7 +310,7 @@ import { ModalComponent } from '../../components/modal/modal';
           </app-card>
         </div>
       </div>
-    @else {
+    } @else {
       <div class="flex justify-center py-20">
         <p class="text-gray-500 animate-pulse">Loading session details...</p>
       </div>
@@ -334,6 +353,39 @@ import { ModalComponent } from '../../components/modal/modal';
         <app-button (onClick)="linkArtifacts()">Link Selected</app-button>
       </div>
     </app-modal>
+
+    <!-- Preview Modal -->
+    <app-modal [isOpen]="isPreviewModalOpen()" [title]="'Preview: ' + previewArtifact()?.name" (close)="isPreviewModalOpen.set(false)">
+      <div class="flex flex-col items-center">
+        @if (previewArtifact()?.type === 'screenshot') {
+          <img [src]="getArtifactUrl(previewArtifact()?.id)" class="max-w-full max-h-[70vh] object-contain rounded shadow-lg border border-gray-200">
+        } @else if (previewArtifact()?.type === 'log') {
+          <div class="w-full max-h-[70vh] overflow-auto p-4 bg-gray-900 text-gray-100 rounded font-mono text-xs whitespace-pre-wrap selection:bg-blue-500 selection:text-white">
+            @if (previewContent()) {
+              {{ previewContent() }}
+            } @else {
+              <div class="flex justify-center py-10">
+                <span class="animate-pulse">Loading content...</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="py-20 text-center space-y-4">
+            <svg class="h-16 w-16 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-gray-500">Preview not available for this file type.</p>
+            <app-button (onClick)="downloadArtifact(previewArtifact())">Download to View</app-button>
+          </div>
+        }
+      </div>
+      <div footer>
+        <div class="flex justify-between items-center w-full">
+          <div class="text-xs text-gray-500">
+            Uploaded: {{ previewArtifact()?.created_at | date:'medium' }}
+          </div>
+          <app-button variant="secondary" (onClick)="isPreviewModalOpen.set(false)">Close</app-button>
+        </div>
+      </div>
+    </app-modal>
     </div>
   `,
 })
@@ -368,8 +420,13 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   activeLogToLink = signal<any>(null);
   tempLinkSelection = signal<number[]>([]);
 
-  // Artifact filtering
+  // Artifact filtering & preview
   artifactFilter = signal<string>('all');
+  isPreviewModalOpen = signal(false);
+  previewArtifact = signal<any>(null);
+  previewContent = signal<string | null>(null);
+  isDebriefingMode = signal(false);
+
   filteredArtifacts = computed(() => {
     const list = this.artifacts();
     const filter = this.artifactFilter();
@@ -379,6 +436,23 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
 
   getCount(type: string) {
     return this.artifacts().filter(a => a.type === type).length;
+  }
+
+  getLinkedLogsForArtifact(artifactId: number) {
+    return this.logs().filter(l => l.artifacts?.some((a: any) => a.id === artifactId));
+  }
+
+  openPreview(art: any) {
+    this.previewArtifact.set(art);
+    this.previewContent.set(null);
+    this.isPreviewModalOpen.set(true);
+
+    if (art.type === 'log') {
+      fetch(this.getArtifactUrl(art.id))
+        .then(res => res.text())
+        .then(text => this.previewContent.set(text))
+        .catch(() => this.previewContent.set('Failed to load log content.'));
+    }
   }
 
   // Timer logic
