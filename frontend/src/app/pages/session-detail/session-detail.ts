@@ -211,21 +211,53 @@ import { ModalComponent } from '../../components/modal/modal';
 
           <!-- Artifacts -->
           <app-card title="Artifacts">
-            <div class="flex justify-between mb-4">
-              <p class="text-xs text-gray-500">Log files, screenshots, Zips, etc.</p>
-              @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
-                <div class="flex items-center space-x-2">
-                   @if (isUploading()) {
-                    <span class="text-xs text-blue-600 animate-pulse">Processing...</span>
-                  }
-                  <input type="file" #fileInput class="hidden" multiple (change)="uploadFiles($event)">
-                  <app-button variant="secondary" [disabled]="isUploading()" (onClick)="fileInput.click()">Upload Artifacts</app-button>
+            <div class="flex flex-col space-y-4 mb-4">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="text-xs text-gray-500">Log files, screenshots, Zips, etc.</p>
                 </div>
-              }
+                @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
+                  <div class="flex items-center space-x-2">
+                     @if (isUploading()) {
+                      <span class="text-xs text-blue-600 animate-pulse">Processing...</span>
+                    }
+                    <input type="file" #fileInput class="hidden" multiple (change)="uploadFiles($event)">
+                    <app-button variant="secondary" size="sm" [disabled]="isUploading()" (onClick)="fileInput.click()">Upload Artifacts</app-button>
+                  </div>
+                }
+              </div>
+
+              <!-- Filter Buttons -->
+              <div class="flex flex-wrap gap-2">
+                <button 
+                  (click)="artifactFilter.set('all')" 
+                  [class]="'px-3 py-1 text-xs rounded-full border transition-all ' + (artifactFilter() === 'all' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300')"
+                >
+                  All ({{ artifacts().length }})
+                </button>
+                <button 
+                  (click)="artifactFilter.set('screenshot')" 
+                  [class]="'px-3 py-1 text-xs rounded-full border transition-all ' + (artifactFilter() === 'screenshot' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300')"
+                >
+                  Screenshots ({{ getCount('screenshot') }})
+                </button>
+                <button 
+                  (click)="artifactFilter.set('log')" 
+                  [class]="'px-3 py-1 text-xs rounded-full border transition-all ' + (artifactFilter() === 'log' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300')"
+                >
+                  Logs ({{ getCount('log') }})
+                </button>
+                <button 
+                  (click)="artifactFilter.set('measurement')" 
+                  [class]="'px-3 py-1 text-xs rounded-full border transition-all ' + (artifactFilter() === 'measurement' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300')"
+                >
+                  Measurements ({{ getCount('measurement') }})
+                </button>
+              </div>
             </div>
             
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              @for (art of artifacts(); track art.id) {
+              @for (art of filteredArtifacts(); track art.id) {
                 <div class="group relative flex flex-col items-center p-2 border border-gray-100 rounded hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer" [class.bg-blue-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
                   @if (isImage(art.name)) {
                     <div class="h-24 w-full bg-gray-100 rounded flex items-center justify-center overflow-hidden mb-2">
@@ -233,17 +265,27 @@ import { ModalComponent } from '../../components/modal/modal';
                     </div>
                   } @else {
                     <div class="h-24 w-full bg-gray-200 rounded flex items-center justify-center mb-2">
-                       <span class="text-xs text-gray-500 uppercase">{{ art.type }}</span>
+                       <span class="text-xs text-gray-500 uppercase font-bold">{{ art.type }}</span>
                     </div>
                   }
-                  <span class="text-xs text-gray-700 truncate w-full text-center" [title]="art.name">{{ art.name }}</span>
+                  <span class="text-[10px] text-gray-700 truncate w-full text-center px-1" [title]="art.name">{{ art.name }}</span>
                   
+                  <!-- Metadata tooltip on hover -->
+                  <div class="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded shadow-lg z-10 pointer-events-none">
+                    <p class="font-bold border-b border-gray-700 pb-1 mb-1 truncate">{{ art.name }}</p>
+                    <p>Type: {{ art.type }}</p>
+                    <p>Uploaded: {{ art.created_at | date:'short' }}</p>
+                    @if (art.metadata?.original_zip) {
+                      <p class="text-blue-300">From: {{ art.metadata.original_zip }}</p>
+                    }
+                  </div>
+
                   @if (isArtifactSelected(art.id)) {
-                    <div class="absolute top-1 right-1 h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-[10px]">✓</div>
+                    <div class="absolute top-1 right-1 h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm">✓</div>
                   }
                 </div>
               } @empty {
-                <p class="col-span-full text-center text-gray-400 text-xs italic">No artifacts captured.</p>
+                <p class="col-span-full text-center text-gray-400 text-xs italic py-8 border-2 border-dashed border-gray-100 rounded-lg">No {{ artifactFilter() === 'all' ? '' : artifactFilter() + ' ' }}artifacts found.</p>
               }
             </div>
           </app-card>
@@ -325,6 +367,19 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   isLinkModalOpen = signal(false);
   activeLogToLink = signal<any>(null);
   tempLinkSelection = signal<number[]>([]);
+
+  // Artifact filtering
+  artifactFilter = signal<string>('all');
+  filteredArtifacts = computed(() => {
+    const list = this.artifacts();
+    const filter = this.artifactFilter();
+    if (filter === 'all') return list;
+    return list.filter(a => a.type === filter);
+  });
+
+  getCount(type: string) {
+    return this.artifacts().filter(a => a.type === type).length;
+  }
 
   // Timer logic
   currentTime = signal(new Date());

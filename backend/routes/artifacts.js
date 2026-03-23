@@ -41,6 +41,19 @@ router.post('/', upload.array('files'), async (req, res, next) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Check if session is completed
+    const sessionResult = await db.query('SELECT status FROM sessions WHERE id = $1', [session_id]);
+    if (sessionResult.rows.length === 0) {
+      // Clean up files
+      for (const file of files) { await unlinkAsync(file.path).catch(() => {}); }
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    if (sessionResult.rows[0].status === 'completed') {
+      // Clean up files
+      for (const file of files) { await unlinkAsync(file.path).catch(() => {}); }
+      return res.status(400).json({ error: 'Cannot upload artifacts to a completed session' });
+    }
+
     const results = [];
 
     for (const file of files) {

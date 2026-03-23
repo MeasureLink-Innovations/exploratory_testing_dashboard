@@ -10,6 +10,15 @@ router.post('/', async (req, res, next) => {
     if (!session_id || !content || !category || !author) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    // Check if session is completed
+    const sessionResult = await db.query('SELECT status FROM sessions WHERE id = $1', [session_id]);
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    if (sessionResult.rows[0].status === 'completed') {
+      return res.status(400).json({ error: 'Cannot add logs to a completed session' });
+    }
     
     // Start transaction
     await db.query('BEGIN');
@@ -63,6 +72,18 @@ router.post('/:id/artifacts', async (req, res, next) => {
     
     if (!artifact_ids || !Array.isArray(artifact_ids)) {
       return res.status(400).json({ error: 'artifact_ids array is required' });
+    }
+
+    // Check if associated session is completed
+    const logResult = await db.query('SELECT session_id FROM logs WHERE id = $1', [id]);
+    if (logResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Log not found' });
+    }
+    
+    const sessionId = logResult.rows[0].session_id;
+    const sessionResult = await db.query('SELECT status FROM sessions WHERE id = $1', [sessionId]);
+    if (sessionResult.rows[0].status === 'completed') {
+      return res.status(400).json({ error: 'Cannot modify a completed session' });
     }
 
     for (const artifactId of artifact_ids) {
