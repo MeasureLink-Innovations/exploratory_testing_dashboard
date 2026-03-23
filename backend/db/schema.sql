@@ -37,3 +37,8 @@ CREATE TABLE IF NOT EXISTS log_artifacts (
   artifact_id INTEGER REFERENCES artifacts(id) ON DELETE CASCADE,
   PRIMARY KEY (log_id, artifact_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_logs_session_id ON logs(session_id);
+CREATE INDEX IF NOT EXISTS idx_artifacts_session_id ON artifacts(session_id);
+CREATE INDEX IF NOT EXISTS idx_log_artifacts_log_id ON log_artifacts(log_id);
+CREATE INDEX IF NOT EXISTS idx_log_artifacts_artifact_id ON log_artifacts(artifact_id);

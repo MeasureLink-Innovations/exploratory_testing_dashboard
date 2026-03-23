@@ -6,6 +6,7 @@ import { ButtonComponent } from '../../components/button/button';
 import { CardComponent } from '../../components/card/card';
 import { ModalComponent } from '../../components/modal/modal';
 import { InputComponent } from '../../components/input/input';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-session-list',
@@ -26,7 +27,7 @@ import { InputComponent } from '../../components/input/input';
            <app-input 
             placeholder="Search title or machine..." 
             [value]="searchQuery()"
-            (valueChange)="searchQuery.set($event)"
+            (valueChange)="onSearch($event)"
             class="w-full sm:w-64"
           />
           <app-button (onClick)="openCreateModal()">New Session</app-button>
@@ -56,11 +57,21 @@ import { InputComponent } from '../../components/input/input';
             </div>
           </app-card>
         } @empty {
-          <div class="col-span-full text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p class="text-gray-500 italic">No sessions found. Create one to get started!</p>
-          </div>
+          @if (!isLoading()) {
+            <div class="col-span-full text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
+              <p class="text-gray-500 italic">No sessions found. Create one to get started!</p>
+            </div>
+          }
         }
       </div>
+
+      @if (hasMore()) {
+        <div class="flex justify-center pt-4">
+          <app-button variant="secondary" [disabled]="isLoading()" (onClick)="loadMore()">
+            {{ isLoading() ? 'Loading...' : 'Load More' }}
+          </app-button>
+        </div>
+      }
 
       <app-modal 
         [isOpen]="isModalOpen()" 
@@ -118,21 +129,54 @@ export class SessionListComponent implements OnInit {
   isModalOpen = signal(false);
   newSession = signal({ title: '', mission: '', charter: '', machine_name: '', duration_minutes: 60 });
   searchQuery = signal('');
+  
+  // Pagination state
+  total = signal(0);
+  limit = 12;
+  offset = signal(0);
+  isLoading = signal(false);
+  hasMore = signal(false);
+
+  private searchSubject = new Subject<string>();
 
   constructor() {
-    effect(() => {
-      this.loadSessions(this.searchQuery());
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(query => {
+      this.searchQuery.set(query);
+      this.resetAndLoad();
     });
   }
 
   ngOnInit() {
-    // initial load handled by effect
+    this.loadSessions();
   }
 
-  loadSessions(query?: string) {
-    this.api.getSessions(query).subscribe(sessions => {
-      this.sessions.set(sessions);
+  onSearch(query: string) {
+    this.searchSubject.next(query);
+  }
+
+  resetAndLoad() {
+    this.offset.set(0);
+    this.sessions.set([]);
+    this.loadSessions();
+  }
+
+  loadSessions() {
+    this.isLoading.set(true);
+    this.api.getSessions(this.searchQuery(), this.limit, this.offset()).subscribe(res => {
+      const current = this.sessions();
+      this.sessions.set([...current, ...res.sessions]);
+      this.total.set(res.pagination.total);
+      this.hasMore.set(this.sessions().length < res.pagination.total);
+      this.isLoading.set(false);
     });
+  }
+
+  loadMore() {
+    this.offset.update(o => o + this.limit);
+    this.loadSessions();
   }
 
   openCreateModal() {
@@ -155,7 +199,7 @@ export class SessionListComponent implements OnInit {
   createSession() {
     this.api.createSession(this.newSession()).subscribe(() => {
       this.isModalOpen.set(false);
-      this.loadSessions(this.searchQuery());
+      this.resetAndLoad();
     });
   }
 

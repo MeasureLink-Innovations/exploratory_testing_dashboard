@@ -1,6 +1,22 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+
+export interface PaginatedResponse<T> {
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+export interface SessionsResponse extends PaginatedResponse<any> {
+  sessions: any[];
+}
+
+export interface LogsResponse extends PaginatedResponse<any> {
+  logs: any[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -10,12 +26,15 @@ export class ApiService {
   private apiUrl = 'http://localhost:3000/api';
 
   // Sessions
-  getSessions(search?: string): Observable<any[]> {
-    let params = new HttpParams();
+  getSessions(search?: string, limit = 20, offset = 0): Observable<SessionsResponse> {
+    let params = new HttpParams()
+      .set('limit', limit.toString())
+      .set('offset', offset.toString());
+    
     if (search) {
       params = params.set('search', search);
     }
-    return this.http.get<any[]>(`${this.apiUrl}/sessions`, { params });
+    return this.http.get<SessionsResponse>(`${this.apiUrl}/sessions`, { params });
   }
 
   getSession(id: number): Observable<any> {
@@ -35,8 +54,12 @@ export class ApiService {
     return this.http.post<any>(`${this.apiUrl}/logs`, log);
   }
 
-  getLogs(sessionId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/logs/session/${sessionId}`);
+  getLogs(sessionId: number, limit = 50, offset = 0): Observable<LogsResponse> {
+    const params = new HttpParams()
+      .set('limit', limit.toString())
+      .set('offset', offset.toString());
+    
+    return this.http.get<LogsResponse>(`${this.apiUrl}/logs/session/${sessionId}`, { params });
   }
 
   linkArtifactsToLog(logId: number, artifactIds: number[]): Observable<any> {
@@ -44,8 +67,8 @@ export class ApiService {
   }
 
   // Artifacts
-  uploadArtifact(formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/artifacts`, formData);
+  uploadArtifact(formData: FormData): Observable<any[]> {
+    return this.http.post<any[]>(`${this.apiUrl}/artifacts`, formData);
   }
 
   getArtifactUrl(id: number): string {
