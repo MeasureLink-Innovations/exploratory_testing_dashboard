@@ -58,8 +58,16 @@ A centralized system for managing exploratory testing sessions, following the Xr
 
 ## Machine Integration
 
-Machines under test can push artifacts directly to a session via the REST API:
-`POST /api/artifacts` (Multipart Form Data with `session_id`, `type`, and `files`).
+Machines under test can push artifacts and log entries directly to a session via the REST API. This is useful for automated test rigs, performance monitors, or error-tracking scripts.
+
+- **API Documentation**: See [docs/API.md](docs/API.md) for full endpoint details.
+- **Python SDK/Example**: Use `test_push.py` as a starting point for integrating your automation scripts.
+
+Example usage:
+```bash
+# Push a log file to session ID 5
+python test_push.py 5 path/to/execution.log
+```
 
 ---
 *Created for structured, evidence-based manual exploratory testing.*
