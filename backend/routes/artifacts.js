@@ -3,12 +3,15 @@ const router = express.Router();
 const multer = require('multer');
 const db = require('../db');
 const AdmZip = require('adm-zip');
+const fs = require('fs');
+const path = require('path');
+const { promisify } = require('util');
+const unlinkAsync = promisify(fs.unlink);
 
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
+// Configure multer for disk storage to avoid memory exhaustion
 const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  dest: 'uploads/',
+  limits: { fileSize: 100 * 1024 * 1024 } // Increased to 100MB as disk storage is safer
 });
 
 const getFileType = (name) => {
@@ -17,6 +20,11 @@ const getFileType = (name) => {
   return 'measurement';
 };
 
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads/')) {
+  fs.mkdirSync('uploads/');
+}
+
 // Upload artifact(s)
 router.post('/', upload.array('files'), async (req, res, next) => {
   try {
@@ -24,43 +32,61 @@ router.post('/', upload.array('files'), async (req, res, next) => {
     const files = req.files;
     
     if (!session_id || !files || files.length === 0) {
+      // Clean up uploaded files if validation fails
+      if (files) {
+        for (const file of files) {
+          await unlinkAsync(file.path).catch(() => {});
+        }
+      }
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const results = [];
 
     for (const file of files) {
-      if (file.originalname.endsWith('.zip')) {
-        // Zip extraction
-        const zip = new AdmZip(file.buffer);
-        const zipEntries = zip.getEntries();
-        
-        for (const entry of zipEntries) {
-          if (!entry.isDirectory) {
-            const entryName = entry.entryName;
-            const entryBuffer = entry.getData();
-            const entryType = getFileType(entryName);
-            
-            const result = await db.query(
-              'INSERT INTO artifacts (session_id, name, type, data, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING id, session_id, name, type, metadata, created_at',
-              [session_id, entryName, entryType, entryBuffer, JSON.stringify({ original_zip: file.originalname })]
-            );
-            results.push(result.rows[0]);
+      try {
+        if (file.originalname.endsWith('.zip')) {
+          // Zip extraction from disk path
+          const zip = new AdmZip(file.path);
+          const zipEntries = zip.getEntries();
+          
+          for (const entry of zipEntries) {
+            if (!entry.isDirectory) {
+              const entryName = entry.entryName;
+              const entryBuffer = entry.getData();
+              const entryType = getFileType(entryName);
+              
+              const result = await db.query(
+                'INSERT INTO artifacts (session_id, name, type, data, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING id, session_id, name, type, metadata, created_at',
+                [session_id, entryName, entryType, entryBuffer, JSON.stringify({ original_zip: file.originalname })]
+              );
+              results.push(result.rows[0]);
+            }
           }
+        } else {
+          // Single file from disk
+          const fileBuffer = fs.readFileSync(file.path);
+          const artifactType = type || getFileType(file.originalname);
+          const result = await db.query(
+            'INSERT INTO artifacts (session_id, name, type, data, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING id, session_id, name, type, metadata, created_at',
+            [session_id, file.originalname, artifactType, fileBuffer, '{}']
+          );
+          results.push(result.rows[0]);
         }
-      } else {
-        // Single file
-        const artifactType = type || getFileType(file.originalname);
-        const result = await db.query(
-          'INSERT INTO artifacts (session_id, name, type, data, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING id, session_id, name, type, metadata, created_at',
-          [session_id, file.originalname, artifactType, file.buffer, '{}']
-        );
-        results.push(result.rows[0]);
+      } finally {
+        // Always clean up the temporary file
+        await unlinkAsync(file.path).catch(err => console.error(`Failed to delete temp file ${file.path}:`, err));
       }
     }
     
     res.status(201).json(results);
   } catch (err) {
+    // Attempt to clean up all files if a general error occurs
+    if (req.files) {
+      for (const file of req.files) {
+        await unlinkAsync(file.path).catch(() => {});
+      }
+    }
     next(err);
   }
 });
@@ -79,9 +105,10 @@ router.get('/:id', async (req, res, next) => {
     
     // Set appropriate content type based on name or type
     let contentType = 'application/octet-stream';
-    if (artifact.name.endsWith('.png')) contentType = 'image/png';
-    else if (artifact.name.endsWith('.jpg') || artifact.name.endsWith('.jpeg')) contentType = 'image/jpeg';
-    else if (artifact.name.endsWith('.txt') || artifact.type === 'log') contentType = 'text/plain';
+    const ext = path.extname(artifact.name).toLowerCase();
+    if (ext === '.png') contentType = 'image/png';
+    else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+    else if (ext === '.txt' || artifact.type === 'log') contentType = 'text/plain';
     
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${artifact.name}"`);

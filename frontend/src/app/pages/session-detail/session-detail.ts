@@ -100,7 +100,7 @@ import { ModalComponent } from '../../components/modal/modal';
                     <app-button variant="ghost" [class.bg-green-50]="logCategory() === 'finding'" (onClick)="logCategory.set('finding')">Finding</app-button>
                     <app-button variant="ghost" [class.bg-red-50]="logCategory() === 'issue'" (onClick)="logCategory.set('issue')">Issue</app-button>
                   </div>
-                  <app-button (onClick)="submitLog()">Post Log</app-button>
+                  <app-button [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">Post Log</app-button>
                 </div>
               </div>
             </app-card>
@@ -110,10 +110,10 @@ import { ModalComponent } from '../../components/modal/modal';
           <app-card title="Log Timeline">
             <div class="flow-root">
               <ul role="list" class="-mb-8">
-                @for (log of session()?.logs; track log.id; let last = $last) {
+                @for (log of logs(); track log.id; let last = $last) {
                   <li>
                     <div class="relative pb-8">
-                      @if (!last) {
+                      @if (!last || hasMoreLogs()) {
                         <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
                       }
                       <div class="relative flex space-x-3">
@@ -160,6 +160,14 @@ import { ModalComponent } from '../../components/modal/modal';
                   <p class="text-center text-gray-500 italic py-4">No logs yet.</p>
                 }
               </ul>
+
+              @if (hasMoreLogs()) {
+                <div class="flex justify-center mt-4">
+                  <app-button variant="ghost" [disabled]="isLoadingLogs()" (onClick)="loadMoreLogs()">
+                    {{ isLoadingLogs() ? 'Loading...' : 'Load Earlier Logs' }}
+                  </app-button>
+                </div>
+              }
             </div>
           </app-card>
 
@@ -179,7 +187,7 @@ import { ModalComponent } from '../../components/modal/modal';
             </div>
             
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              @for (art of session()?.artifacts; track art.id) {
+              @for (art of artifacts(); track art.id) {
                 <div class="group relative flex flex-col items-center p-2 border border-gray-100 rounded hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer" [class.bg-blue-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
                   @if (isImage(art.name)) {
                     <div class="h-24 w-full bg-gray-100 rounded flex items-center justify-center overflow-hidden mb-2">
@@ -231,7 +239,7 @@ import { ModalComponent } from '../../components/modal/modal';
       <div class="space-y-4">
         <p class="text-sm text-gray-600">Select artifacts to link to this log entry.</p>
         <div class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
-          @for (art of session()?.artifacts; track art.id) {
+          @for (art of artifacts(); track art.id) {
             <div 
               (click)="toggleLinkSelection(art.id)"
               [class]="'p-2 border rounded text-xs cursor-pointer truncate ' + (tempLinkSelection().includes(art.id) ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-200 text-gray-600')"
@@ -254,12 +262,22 @@ export class SessionDetailComponent implements OnInit {
   private api = inject(ApiService);
   
   session = signal<any>(null);
+  logs = signal<any[]>([]);
+  artifacts = signal<any[]>([]);
+  
   logEntry = signal('');
   logCategory = signal('note');
   isUploading = signal(false);
+  isSubmittingLog = signal(false);
   
   // Selection for linking
   selectedArtifacts = signal<any[]>([]);
+  
+  // Pagination state for logs
+  logLimit = 20;
+  logOffset = signal(0);
+  hasMoreLogs = signal(false);
+  isLoadingLogs = signal(false);
   
   // Modals
   isStartModalOpen = signal(false);
@@ -276,8 +294,28 @@ export class SessionDetailComponent implements OnInit {
   loadSession() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.getSession(id).subscribe(session => {
+      // The session endpoint returns initial logs and artifacts
       this.session.set(session);
+      this.logs.set(session.logs);
+      this.artifacts.set(session.artifacts);
+      
+      // Check if there might be more logs based on the returned count
+      // (Backend detail endpoint returns all, but we might want to paginate later)
+      // For now, let's assume we want to handle pagination strictly via /logs/session/:id
+      this.hasMoreLogs.set(false); 
+      
       if (session.machine_name) this.machineName.set(session.machine_name);
+    });
+  }
+
+  loadMoreLogs() {
+    this.isLoadingLogs.set(true);
+    const id = this.session().id;
+    this.api.getLogs(id, this.logLimit, this.logOffset() + this.logLimit).subscribe(res => {
+      this.logs.update(current => [...res.logs, ...current]);
+      this.logOffset.update(o => o + this.logLimit);
+      this.hasMoreLogs.set(this.logs().length < res.pagination.total);
+      this.isLoadingLogs.set(false);
     });
   }
 
@@ -290,35 +328,45 @@ export class SessionDetailComponent implements OnInit {
     this.api.updateSession(id, { 
       status: 'in-progress', 
       machine_name: this.machineName()
-    }).subscribe(() => {
+    }).subscribe(updated => {
       this.isStartModalOpen.set(false);
-      this.loadSession();
+      this.session.update(s => ({ ...s, ...updated }));
     });
   }
 
   moveToDebriefing() {
     const id = this.session().id;
-    this.api.updateSession(id, { status: 'debriefing' }).subscribe(() => this.loadSession());
+    this.api.updateSession(id, { status: 'debriefing' }).subscribe(updated => {
+      this.session.update(s => ({ ...s, ...updated }));
+    });
   }
 
   completeSession() {
     const id = this.session().id;
-    this.api.updateSession(id, { status: 'completed' }).subscribe(() => this.loadSession());
+    this.api.updateSession(id, { status: 'completed' }).subscribe(updated => {
+      this.session.update(s => ({ ...s, ...updated }));
+    });
   }
 
   submitLog() {
-    if (!this.logEntry()) return;
+    if (!this.logEntry() || this.isSubmittingLog()) return;
     
+    this.isSubmittingLog.set(true);
     this.api.createLog({
       session_id: this.session().id,
       content: this.logEntry(),
       category: this.logCategory(),
       author: 'tester',
       artifact_ids: this.selectedArtifacts().map(a => a.id)
-    }).subscribe(() => {
-      this.logEntry.set('');
-      this.selectedArtifacts.set([]);
-      this.loadSession();
+    }).subscribe({
+      next: (newLog) => {
+        // Incremental update: append new log to the end (since order is ASC)
+        this.logs.update(l => [...l, newLog]);
+        this.logEntry.set('');
+        this.selectedArtifacts.set([]);
+        this.isSubmittingLog.set(false);
+      },
+      error: () => this.isSubmittingLog.set(false)
     });
   }
 
@@ -334,9 +382,10 @@ export class SessionDetailComponent implements OnInit {
     formData.append('session_id', this.session().id.toString());
 
     this.api.uploadArtifact(formData).subscribe({
-      next: () => {
+      next: (newArtifacts) => {
+        // Incremental update: append new artifacts
+        this.artifacts.update(a => [...a, ...newArtifacts]);
         this.isUploading.set(false);
-        this.loadSession();
       },
       error: () => this.isUploading.set(false)
     });
@@ -384,8 +433,12 @@ export class SessionDetailComponent implements OnInit {
   linkArtifacts() {
     const logId = this.activeLogToLink().id;
     this.api.linkArtifactsToLog(logId, this.tempLinkSelection()).subscribe(() => {
+      // Update local log artifacts incrementally
+      const updatedArtifacts = this.artifacts().filter(a => this.tempLinkSelection().includes(a.id));
+      this.logs.update(list => list.map(l => 
+        l.id === logId ? { ...l, artifacts: updatedArtifacts } : l
+      ));
       this.isLinkModalOpen.set(false);
-      this.loadSession();
     });
   }
 

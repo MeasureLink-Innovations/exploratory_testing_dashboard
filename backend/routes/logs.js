@@ -78,12 +78,14 @@ router.post('/:id/artifacts', async (req, res, next) => {
   }
 });
 
-// List logs for a session
+// List logs for a session (with pagination)
 router.get('/session/:sessionId', async (req, res, next) => {
   try {
     const { sessionId } = req.params;
+    const { limit = 50, offset = 0 } = req.query;
+    
     const result = await db.query(`
-      SELECT l.*, 
+      SELECT l.*, COUNT(*) OVER() as total_count,
       COALESCE(
         json_agg(
           json_build_object('id', a.id, 'name', a.name, 'type', a.type)
@@ -96,8 +98,23 @@ router.get('/session/:sessionId', async (req, res, next) => {
       WHERE l.session_id = $1
       GROUP BY l.id
       ORDER BY l.timestamp ASC
-    `, [sessionId]);
-    res.json(result.rows);
+      LIMIT $2 OFFSET $3
+    `, [sessionId, parseInt(limit), parseInt(offset)]);
+
+    const totalCount = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+    const logs = result.rows.map(row => {
+      const { total_count, ...log } = row;
+      return log;
+    });
+
+    res.json({
+      logs,
+      pagination: {
+        total: totalCount,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
   } catch (err) {
     next(err);
   }
