@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: 'html',
   use: {
     actionTimeout: 0,
-    baseURL: 'http://localhost:3000', // Placeholder URL
+    baseURL: 'http://localhost:4200',
     trace: 'on-first-retry',
   },
 
