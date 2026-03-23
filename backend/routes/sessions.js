@@ -107,6 +107,11 @@ router.put('/:id', async (req, res, next) => {
     }
     const current = currentResult.rows[0];
 
+    // If session is already completed, prevent any updates
+    if (current.status === 'completed') {
+      return res.status(400).json({ error: 'Cannot modify a completed session' });
+    }
+
     // Build update query dynamically
     const fields = [];
     const values = [];
