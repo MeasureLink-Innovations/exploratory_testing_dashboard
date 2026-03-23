@@ -64,10 +64,10 @@ router.get('/:id', async (req, res, next) => {
 // Create session
 router.post('/', async (req, res, next) => {
   try {
-    const { title, mission, charter, machine_name } = req.body;
+    const { title, mission, charter, machine_name, duration_minutes } = req.body;
     const result = await db.query(
-      'INSERT INTO sessions (title, mission, charter, machine_name) VALUES ($1, $2, $3, $4) RETURNING *',
-      [title, mission, charter, machine_name]
+      'INSERT INTO sessions (title, mission, charter, machine_name, duration_minutes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [title, mission, charter, machine_name, duration_minutes || 60]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -79,7 +79,7 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, machine_name, title, mission, charter, start_time, end_time } = req.body;
+    const { status, machine_name, title, mission, charter, start_time, end_time, duration_minutes, debrief_summary } = req.body;
     
     // Fetch current session to check status
     const currentResult = await db.query('SELECT * FROM sessions WHERE id = $1', [id]);
@@ -119,6 +119,8 @@ router.put('/:id', async (req, res, next) => {
     if (charter) { fields.push(`charter = $${idx++}`); values.push(charter); }
     if (start_time) { fields.push(`start_time = $${idx++}`); values.push(start_time); }
     if (end_time) { fields.push(`end_time = $${idx++}`); values.push(end_time); }
+    if (duration_minutes) { fields.push(`duration_minutes = $${idx++}`); values.push(duration_minutes); }
+    if (debrief_summary) { fields.push(`debrief_summary = $${idx++}`); values.push(debrief_summary); }
     
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });

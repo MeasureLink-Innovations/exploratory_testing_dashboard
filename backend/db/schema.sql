@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   charter TEXT NOT NULL,
   machine_name VARCHAR(255),
   status VARCHAR(50) DEFAULT 'planned', -- planned, in-progress, debriefing, completed
+  duration_minutes INTEGER DEFAULT 60,
+  debrief_summary TEXT,
   start_time TIMESTAMP,
   end_time TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

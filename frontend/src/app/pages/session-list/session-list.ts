@@ -75,25 +75,33 @@ import { InputComponent } from '../../components/input/input';
             (valueChange)="updateNewSession('title', $event)"
           />
           <app-input 
-            label="Mission" 
+            label="Charter (What to test, Scope & Approach)" 
             type="textarea"
-            placeholder="What is the overall goal?" 
-            [value]="newSession().mission"
-            (valueChange)="updateNewSession('mission', $event)"
-          />
-          <app-input 
-            label="Charter" 
-            type="textarea"
-            placeholder="Specific area or features to explore" 
+            placeholder="Define the scope, risks, and approach..." 
             [value]="newSession().charter"
             (valueChange)="updateNewSession('charter', $event)"
           />
-           <app-input 
-            label="Machine Name (Optional)" 
-            placeholder="e.g. Test-VM-01" 
-            [value]="newSession().machine_name"
-            (valueChange)="updateNewSession('machine_name', $event)"
+          <app-input 
+            label="Mission (Specific Goal/Target)" 
+            type="textarea"
+            placeholder="Define the specific goal or purpose of this session..." 
+            [value]="newSession().mission"
+            (valueChange)="updateNewSession('mission', $event)"
           />
+          <div class="grid grid-cols-2 gap-4">
+            <app-input 
+              label="Machine Name (Optional)" 
+              placeholder="e.g. Test-VM-01" 
+              [value]="newSession().machine_name"
+              (valueChange)="updateNewSession('machine_name', $event)"
+            />
+            <app-input 
+              label="Timebox (Minutes)" 
+              type="number"
+              [value]="newSession().duration_minutes.toString()"
+              (valueChange)="updateNewSession('duration_minutes', $event)"
+            />
+          </div>
         </div>
         <div footer>
           <app-button variant="secondary" (onClick)="isModalOpen.set(false)">Cancel</app-button>
@@ -108,7 +116,7 @@ export class SessionListComponent implements OnInit {
   
   sessions = signal<any[]>([]);
   isModalOpen = signal(false);
-  newSession = signal({ title: '', mission: '', charter: '', machine_name: '' });
+  newSession = signal({ title: '', mission: '', charter: '', machine_name: '', duration_minutes: 60 });
   searchQuery = signal('');
 
   constructor() {
@@ -128,12 +136,15 @@ export class SessionListComponent implements OnInit {
   }
 
   openCreateModal() {
-    this.newSession.set({ title: '', mission: '', charter: '', machine_name: '' });
+    this.newSession.set({ title: '', mission: '', charter: '', machine_name: '', duration_minutes: 60 });
     this.isModalOpen.set(true);
   }
 
   updateNewSession(field: string, value: string) {
-    this.newSession.update(s => ({ ...s, [field]: value }));
+    this.newSession.update(s => ({ 
+      ...s, 
+      [field]: field === 'duration_minutes' ? parseInt(value) || 0 : value 
+    }));
   }
 
   isValid() {

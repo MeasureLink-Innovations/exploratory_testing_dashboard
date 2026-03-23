@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
@@ -23,7 +23,15 @@ import { ModalComponent } from '../../components/modal/modal';
               <li class="font-medium text-gray-900">{{ session()?.title }}</li>
             </ol>
           </nav>
-          <h2 class="text-3xl font-bold text-gray-900">{{ session()?.title }}</h2>
+          <div class="flex items-center gap-3">
+            <h2 class="text-3xl font-bold text-gray-900">{{ session()?.title }}</h2>
+            @if (session()?.status === 'in-progress') {
+              <div class="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold animate-pulse">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ timeRemaining() }}
+              </div>
+            }
+          </div>
         </div>
         
         <div class="flex space-x-3">
@@ -40,12 +48,12 @@ import { ModalComponent } from '../../components/modal/modal';
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Sidebar: Info -->
         <div class="lg:col-span-1 space-y-6">
-          <app-card title="Mission">
-            <p class="text-sm text-gray-600">{{ session()?.mission }}</p>
+          <app-card title="Charter (Scope & Approach)">
+            <p class="text-sm text-gray-600">{{ session()?.charter }}</p>
           </app-card>
           
-          <app-card title="Charter">
-            <p class="text-sm text-gray-600">{{ session()?.charter }}</p>
+          <app-card title="Mission (Specific Goal)">
+            <p class="text-sm text-gray-600">{{ session()?.mission }}</p>
           </app-card>
 
           <app-card title="Details">
@@ -53,6 +61,10 @@ import { ModalComponent } from '../../components/modal/modal';
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase">Status</dt>
                 <dd class="mt-1 text-sm font-semibold uppercase tracking-wider" [class]="statusColor(session()?.status)">{{ session()?.status }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase">Timebox</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ session()?.duration_minutes }} minutes</dd>
               </div>
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase">Machine Name</dt>
@@ -72,6 +84,27 @@ import { ModalComponent } from '../../components/modal/modal';
 
         <!-- Main: Logs & Artifacts -->
         <div class="lg:col-span-2 space-y-6">
+          <!-- Debrief Summary -->
+          @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
+            <app-card title="Briefing / Debrief Summary">
+              @if (session()?.status === 'debriefing') {
+                <div class="space-y-4">
+                  <app-input 
+                    type="textarea" 
+                    placeholder="Provide a summary of the testing session, main findings, and follow-ups..." 
+                    [value]="debriefSummary()"
+                    (valueChange)="debriefSummary.set($event)"
+                  />
+                  <div class="flex justify-end">
+                    <app-button (onClick)="saveDebriefSummary()">Save Summary</app-button>
+                  </div>
+                </div>
+              } @else {
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ session()?.debrief_summary || 'No summary provided.' }}</p>
+              }
+            </app-card>
+          }
+
           <!-- Real-time Logging -->
           @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
             <app-card title="Add Log Entry">
@@ -100,7 +133,7 @@ import { ModalComponent } from '../../components/modal/modal';
                     <app-button variant="ghost" [class.bg-green-50]="logCategory() === 'finding'" (onClick)="logCategory.set('finding')">Finding</app-button>
                     <app-button variant="ghost" [class.bg-red-50]="logCategory() === 'issue'" (onClick)="logCategory.set('issue')">Issue</app-button>
                   </div>
-                  <app-button (onClick)="submitLog()">Post Log</app-button>
+                  <app-button [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">Post Log</app-button>
                 </div>
               </div>
             </app-card>
@@ -110,10 +143,10 @@ import { ModalComponent } from '../../components/modal/modal';
           <app-card title="Log Timeline">
             <div class="flow-root">
               <ul role="list" class="-mb-8">
-                @for (log of session()?.logs; track log.id; let last = $last) {
+                @for (log of logs(); track log.id; let last = $last) {
                   <li>
                     <div class="relative pb-8">
-                      @if (!last) {
+                      @if (!last || hasMoreLogs()) {
                         <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
                       }
                       <div class="relative flex space-x-3">
@@ -160,6 +193,14 @@ import { ModalComponent } from '../../components/modal/modal';
                   <p class="text-center text-gray-500 italic py-4">No logs yet.</p>
                 }
               </ul>
+
+              @if (hasMoreLogs()) {
+                <div class="flex justify-center mt-4">
+                  <app-button variant="ghost" [disabled]="isLoadingLogs()" (onClick)="loadMoreLogs()">
+                    {{ isLoadingLogs() ? 'Loading...' : 'Load Earlier Logs' }}
+                  </app-button>
+                </div>
+              }
             </div>
           </app-card>
 
@@ -179,7 +220,7 @@ import { ModalComponent } from '../../components/modal/modal';
             </div>
             
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              @for (art of session()?.artifacts; track art.id) {
+              @for (art of artifacts(); track art.id) {
                 <div class="group relative flex flex-col items-center p-2 border border-gray-100 rounded hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer" [class.bg-blue-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
                   @if (isImage(art.name)) {
                     <div class="h-24 w-full bg-gray-100 rounded flex items-center justify-center overflow-hidden mb-2">
@@ -231,7 +272,7 @@ import { ModalComponent } from '../../components/modal/modal';
       <div class="space-y-4">
         <p class="text-sm text-gray-600">Select artifacts to link to this log entry.</p>
         <div class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
-          @for (art of session()?.artifacts; track art.id) {
+          @for (art of artifacts(); track art.id) {
             <div 
               (click)="toggleLinkSelection(art.id)"
               [class]="'p-2 border rounded text-xs cursor-pointer truncate ' + (tempLinkSelection().includes(art.id) ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-200 text-gray-600')"
@@ -249,17 +290,28 @@ import { ModalComponent } from '../../components/modal/modal';
     </div>
   `,
 })
-export class SessionDetailComponent implements OnInit {
+export class SessionDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   
   session = signal<any>(null);
+  logs = signal<any[]>([]);
+  artifacts = signal<any[]>([]);
+  
   logEntry = signal('');
   logCategory = signal('note');
+  debriefSummary = signal('');
   isUploading = signal(false);
+  isSubmittingLog = signal(false);
   
   // Selection for linking
   selectedArtifacts = signal<any[]>([]);
+  
+  // Pagination state for logs
+  logLimit = 20;
+  logOffset = signal(0);
+  hasMoreLogs = signal(false);
+  isLoadingLogs = signal(false);
   
   // Modals
   isStartModalOpen = signal(false);
@@ -269,15 +321,74 @@ export class SessionDetailComponent implements OnInit {
   activeLogToLink = signal<any>(null);
   tempLinkSelection = signal<number[]>([]);
 
+  // Timer logic
+  currentTime = signal(new Date());
+  private timerInterval?: any;
+
+  timeRemaining = computed(() => {
+    const s = this.session();
+    if (!s || s.status !== 'in-progress' || !s.start_time) return '00:00';
+    
+    const start = new Date(s.start_time).getTime();
+    const durationMs = s.duration_minutes * 60 * 1000;
+    const end = start + durationMs;
+    const remainingMs = end - this.currentTime().getTime();
+    
+    if (remainingMs <= 0) return 'TIME EXPIRED';
+    
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  });
+
   ngOnInit() {
     this.loadSession();
+    this.timerInterval = setInterval(() => {
+      this.currentTime.set(new Date());
+    }, 1000);
+  }
+
+  ngOnDestroy() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
   }
 
   loadSession() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.getSession(id).subscribe(session => {
+      // The session endpoint returns initial logs and artifacts
       this.session.set(session);
+      this.logs.set(session.logs);
+      this.artifacts.set(session.artifacts);
+      this.debriefSummary.set(session.debrief_summary || '');
+      
+      // Check if there might be more logs based on the returned count
+      // (Backend detail endpoint returns all, but we might want to paginate later)
+      // For now, let's assume we want to handle pagination strictly via /logs/session/:id
+      this.hasMoreLogs.set(false); 
+      
       if (session.machine_name) this.machineName.set(session.machine_name);
+    });
+  }
+
+  saveDebriefSummary() {
+    const id = this.session().id;
+    this.api.updateSession(id, { debrief_summary: this.debriefSummary() }).subscribe(updated => {
+      this.session.update(s => ({ ...s, ...updated }));
+    });
+  }
+
+  loadMoreLogs() {
+    this.isLoadingLogs.set(true);
+    const id = this.session().id;
+    this.api.getLogs(id, this.logLimit, this.logOffset() + this.logLimit).subscribe(res => {
+      this.logs.update(current => [...res.logs, ...current]);
+      this.logOffset.update(o => o + this.logLimit);
+      this.hasMoreLogs.set(this.logs().length < res.pagination.total);
+      this.isLoadingLogs.set(false);
     });
   }
 
@@ -290,35 +401,45 @@ export class SessionDetailComponent implements OnInit {
     this.api.updateSession(id, { 
       status: 'in-progress', 
       machine_name: this.machineName()
-    }).subscribe(() => {
+    }).subscribe(updated => {
       this.isStartModalOpen.set(false);
-      this.loadSession();
+      this.session.update(s => ({ ...s, ...updated }));
     });
   }
 
   moveToDebriefing() {
     const id = this.session().id;
-    this.api.updateSession(id, { status: 'debriefing' }).subscribe(() => this.loadSession());
+    this.api.updateSession(id, { status: 'debriefing' }).subscribe(updated => {
+      this.session.update(s => ({ ...s, ...updated }));
+    });
   }
 
   completeSession() {
     const id = this.session().id;
-    this.api.updateSession(id, { status: 'completed' }).subscribe(() => this.loadSession());
+    this.api.updateSession(id, { status: 'completed' }).subscribe(updated => {
+      this.session.update(s => ({ ...s, ...updated }));
+    });
   }
 
   submitLog() {
-    if (!this.logEntry()) return;
+    if (!this.logEntry() || this.isSubmittingLog()) return;
     
+    this.isSubmittingLog.set(true);
     this.api.createLog({
       session_id: this.session().id,
       content: this.logEntry(),
       category: this.logCategory(),
       author: 'tester',
       artifact_ids: this.selectedArtifacts().map(a => a.id)
-    }).subscribe(() => {
-      this.logEntry.set('');
-      this.selectedArtifacts.set([]);
-      this.loadSession();
+    }).subscribe({
+      next: (newLog) => {
+        // Incremental update: append new log to the end (since order is ASC)
+        this.logs.update(l => [...l, newLog]);
+        this.logEntry.set('');
+        this.selectedArtifacts.set([]);
+        this.isSubmittingLog.set(false);
+      },
+      error: () => this.isSubmittingLog.set(false)
     });
   }
 
@@ -334,9 +455,10 @@ export class SessionDetailComponent implements OnInit {
     formData.append('session_id', this.session().id.toString());
 
     this.api.uploadArtifact(formData).subscribe({
-      next: () => {
+      next: (newArtifacts) => {
+        // Incremental update: append new artifacts
+        this.artifacts.update(a => [...a, ...newArtifacts]);
         this.isUploading.set(false);
-        this.loadSession();
       },
       error: () => this.isUploading.set(false)
     });
@@ -384,8 +506,12 @@ export class SessionDetailComponent implements OnInit {
   linkArtifacts() {
     const logId = this.activeLogToLink().id;
     this.api.linkArtifactsToLog(logId, this.tempLinkSelection()).subscribe(() => {
+      // Update local log artifacts incrementally
+      const updatedArtifacts = this.artifacts().filter(a => this.tempLinkSelection().includes(a.id));
+      this.logs.update(list => list.map(l => 
+        l.id === logId ? { ...l, artifacts: updatedArtifacts } : l
+      ));
       this.isLinkModalOpen.set(false);
-      this.loadSession();
     });
   }
 
