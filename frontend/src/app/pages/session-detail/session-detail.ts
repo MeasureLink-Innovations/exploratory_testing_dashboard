@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
@@ -23,7 +23,20 @@ import { ModalComponent } from '../../components/modal/modal';
               <li class="font-medium text-gray-900">{{ session()?.title }}</li>
             </ol>
           </nav>
-          <h2 class="text-3xl font-bold text-gray-900">{{ session()?.title }}</h2>
+          <div class="flex items-center gap-3">
+            <h2 class="text-3xl font-bold text-gray-900">{{ session()?.title }}</h2>
+            @if (session()?.status === 'in-progress') {
+              <div class="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold animate-pulse">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ timeRemaining() }}
+              </div>
+            } @else if (session()?.status === 'completed') {
+              <div class="flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium border border-gray-200">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                Read-Only
+              </div>
+            }
+          </div>
         </div>
         
         <div class="flex space-x-3">
@@ -40,12 +53,12 @@ import { ModalComponent } from '../../components/modal/modal';
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Sidebar: Info -->
         <div class="lg:col-span-1 space-y-6">
-          <app-card title="Mission">
-            <p class="text-sm text-gray-600">{{ session()?.mission }}</p>
+          <app-card title="Charter (Scope & Approach)">
+            <p class="text-sm text-gray-600">{{ session()?.charter }}</p>
           </app-card>
           
-          <app-card title="Charter">
-            <p class="text-sm text-gray-600">{{ session()?.charter }}</p>
+          <app-card title="Mission (Specific Goal)">
+            <p class="text-sm text-gray-600">{{ session()?.mission }}</p>
           </app-card>
 
           <app-card title="Details">
@@ -53,6 +66,10 @@ import { ModalComponent } from '../../components/modal/modal';
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase">Status</dt>
                 <dd class="mt-1 text-sm font-semibold uppercase tracking-wider" [class]="statusColor(session()?.status)">{{ session()?.status }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase">Timebox</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ session()?.duration_minutes }} minutes</dd>
               </div>
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase">Machine Name</dt>
@@ -72,6 +89,27 @@ import { ModalComponent } from '../../components/modal/modal';
 
         <!-- Main: Logs & Artifacts -->
         <div class="lg:col-span-2 space-y-6">
+          <!-- Debrief Summary -->
+          @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
+            <app-card title="Briefing / Debrief Summary">
+              @if (session()?.status === 'debriefing') {
+                <div class="space-y-4">
+                  <app-input 
+                    type="textarea" 
+                    placeholder="Provide a summary of the testing session, main findings, and follow-ups..." 
+                    [value]="debriefSummary()"
+                    (valueChange)="debriefSummary.set($event)"
+                  />
+                  <div class="flex justify-end">
+                    <app-button (onClick)="saveDebriefSummary()">Save Summary</app-button>
+                  </div>
+                </div>
+              } @else {
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ session()?.debrief_summary || 'No summary provided.' }}</p>
+              }
+            </app-card>
+          }
+
           <!-- Real-time Logging -->
           @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
             <app-card title="Add Log Entry">
@@ -211,7 +249,7 @@ import { ModalComponent } from '../../components/modal/modal';
           </app-card>
         </div>
       </div>
-    } @else {
+    @else {
       <div class="flex justify-center py-20">
         <p class="text-gray-500 animate-pulse">Loading session details...</p>
       </div>
@@ -257,7 +295,7 @@ import { ModalComponent } from '../../components/modal/modal';
     </div>
   `,
 })
-export class SessionDetailComponent implements OnInit {
+export class SessionDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   
@@ -267,6 +305,7 @@ export class SessionDetailComponent implements OnInit {
   
   logEntry = signal('');
   logCategory = signal('note');
+  debriefSummary = signal('');
   isUploading = signal(false);
   isSubmittingLog = signal(false);
   
@@ -287,8 +326,39 @@ export class SessionDetailComponent implements OnInit {
   activeLogToLink = signal<any>(null);
   tempLinkSelection = signal<number[]>([]);
 
+  // Timer logic
+  currentTime = signal(new Date());
+  private timerInterval?: any;
+
+  timeRemaining = computed(() => {
+    const s = this.session();
+    if (!s || s.status !== 'in-progress' || !s.start_time) return '00:00';
+    
+    const start = new Date(s.start_time).getTime();
+    const durationMs = s.duration_minutes * 60 * 1000;
+    const end = start + durationMs;
+    const remainingMs = end - this.currentTime().getTime();
+    
+    if (remainingMs <= 0) return 'TIME EXPIRED';
+    
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  });
+
   ngOnInit() {
     this.loadSession();
+    this.timerInterval = setInterval(() => {
+      this.currentTime.set(new Date());
+    }, 1000);
+  }
+
+  ngOnDestroy() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
   }
 
   loadSession() {
@@ -298,6 +368,7 @@ export class SessionDetailComponent implements OnInit {
       this.session.set(session);
       this.logs.set(session.logs);
       this.artifacts.set(session.artifacts);
+      this.debriefSummary.set(session.debrief_summary || '');
       
       // Check if there might be more logs based on the returned count
       // (Backend detail endpoint returns all, but we might want to paginate later)
@@ -305,6 +376,13 @@ export class SessionDetailComponent implements OnInit {
       this.hasMoreLogs.set(false); 
       
       if (session.machine_name) this.machineName.set(session.machine_name);
+    });
+  }
+
+  saveDebriefSummary() {
+    const id = this.session().id;
+    this.api.updateSession(id, { debrief_summary: this.debriefSummary() }).subscribe(updated => {
+      this.session.update(s => ({ ...s, ...updated }));
     });
   }
 
