@@ -2,21 +2,40 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// List all sessions (with search)
+// List all sessions (with search and pagination)
 router.get('/', async (req, res, next) => {
   try {
-    const { search } = req.query;
-    let query = 'SELECT * FROM sessions';
+    const { search, limit = 20, offset = 0 } = req.query;
+    let query = 'SELECT *, COUNT(*) OVER() as total_count FROM sessions';
     const params = [];
 
     if (search) {
       query += ' WHERE title ILIKE $1 OR machine_name ILIKE $1';
       params.push(`%${search}%`);
+      query += ` ORDER BY created_at DESC LIMIT $2 OFFSET $3`;
+      params.push(parseInt(limit), parseInt(offset));
+    } else {
+      query += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`;
+      params.push(parseInt(limit), parseInt(offset));
     }
 
-    query += ' ORDER BY created_at DESC';
     const result = await db.query(query, params);
-    res.json(result.rows);
+    const totalCount = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+    
+    // Clean up response objects to remove the total_count from each row
+    const sessions = result.rows.map(row => {
+      const { total_count, ...session } = row;
+      return session;
+    });
+
+    res.json({
+      sessions,
+      pagination: {
+        total: totalCount,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
   } catch (err) {
     next(err);
   }
