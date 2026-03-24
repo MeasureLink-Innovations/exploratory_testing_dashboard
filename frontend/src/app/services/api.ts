@@ -26,10 +26,12 @@ export class ApiService {
   private apiUrl = 'http://localhost:3000/api';
 
   // Sessions
-  getSessions(search?: string, limit = 20, offset = 0): Observable<SessionsResponse> {
+  getSessions(search?: string, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC'): Observable<SessionsResponse> {
     let params = new HttpParams()
       .set('limit', limit.toString())
-      .set('offset', offset.toString());
+      .set('offset', offset.toString())
+      .set('sortBy', sortBy)
+      .set('sortOrder', sortOrder);
     
     if (search) {
       params = params.set('search', search);
