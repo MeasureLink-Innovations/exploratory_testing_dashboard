@@ -20,49 +20,105 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
     InputComponent
   ],
   template: `
-    <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 class="text-2xl font-bold text-gray-900">Testing Sessions</h2>
-        <div class="flex w-full sm:w-auto space-x-2">
+    <div class="space-y-8">
+      <div class="flex flex-col sm:flex-row justify-between items-end gap-6 border-b-4 border-black dark:border-white pb-6">
+        <div>
+          <h2 class="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Session Archive</h2>
+          <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mt-1">Exploratory Testing Manifest</p>
+        </div>
+        <div class="flex w-full sm:w-auto space-x-4">
            <app-input 
-            placeholder="Search title or machine..." 
+            placeholder="FILTER BY TITLE OR MACHINE..." 
             [value]="searchQuery()"
             (valueChange)="onSearch($event)"
-            class="w-full sm:w-64"
+            class="w-full sm:w-80 mb-0"
           />
-          <app-button (onClick)="openCreateModal()">New Session</app-button>
+          <app-button (onClick)="openCreateModal()">+ NEW ENTRY</app-button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        @for (session of sessions(); track session.id) {
-          <app-card [title]="session.title">
-            <div class="space-y-2">
-              <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-500">Status:</span>
-                <span [class]="'px-2 py-0.5 rounded text-xs font-semibold uppercase ' + statusClasses(session.status)">
-                  {{ session.status }}
-                </span>
-              </div>
-              @if (session.machine_name) {
-                <div class="flex justify-between items-center">
-                  <span class="text-sm font-medium text-gray-500">Machine:</span>
-                  <span class="text-sm text-gray-700 italic">{{ session.machine_name }}</span>
+      <div class="overflow-x-auto e-ink-shadow">
+        <table class="w-full border-collapse bg-white dark:bg-gray-900 border-2 border-black dark:border-white text-sm">
+          <thead>
+            <tr class="bg-black text-white dark:bg-white dark:text-black">
+              <th (click)="toggleSort('title')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span>Session Title / Mission</span>
+                  <span class="ml-2">
+                    @if (sortBy() === 'title') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                  </span>
                 </div>
+              </th>
+              <th (click)="toggleSort('machine_name')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span>Machine</span>
+                  <span class="ml-2">
+                    @if (sortBy() === 'machine_name') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                  </span>
+                </div>
+              </th>
+              <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span>Created</span>
+                  <span class="ml-2">
+                    @if (sortBy() === 'created_at') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                  </span>
+                </div>
+              </th>
+              <th (click)="toggleSort('status')" class="group cursor-pointer px-4 py-3 text-right text-xs font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                <div class="flex items-center justify-end">
+                  <span>Status</span>
+                  <span class="ml-2">
+                    @if (sortBy() === 'status') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                  </span>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y-2 divide-black dark:divide-white">
+            @for (session of sessions(); track session.id) {
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+                <td class="px-4 py-4 border-r-2 border-black dark:border-white">
+                  <div class="flex flex-col">
+                    <span class="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:underline decoration-2 cursor-pointer" [routerLink]="['/sessions', session.id]">
+                      {{ session.title }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1 font-medium">{{ session.mission }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap border-r-2 border-black dark:border-white hidden md:table-cell">
+                  <span class="text-xs font-bold font-mono text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1">
+                    {{ session.machine_name || '---' }}
+                  </span>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap hidden sm:table-cell border-r-2 border-black dark:border-white">
+                  <div class="flex flex-col">
+                    <span class="text-xs font-black text-gray-900 dark:text-white uppercase">{{ session.created_at | date:'MMM dd, yyyy' }}</span>
+                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5">{{ session.created_at | date:'shortTime' }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap text-right">
+                  <span [class]="'px-2 py-1 text-[10px] font-black uppercase tracking-tighter border-2 inline-block ' + statusClasses(session.status)">
+                    {{ session.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+ @empty {
+              @if (!isLoading()) {
+                <tr>
+                  <td colspan="5" class="px-4 py-20 text-center">
+                    <p class="text-lg font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest italic">No matching records found in manifest</p>
+                  </td>
+                </tr>
               }
-              <p class="text-sm text-gray-600 line-clamp-2">{{ session.mission }}</p>
-            </div>
-            <div footer class="px-4 py-3 bg-gray-50 text-right sm:px-6">
-              <app-button variant="ghost" [routerLink]="['/sessions', session.id]">View Details</app-button>
-            </div>
-          </app-card>
-        } @empty {
-          @if (!isLoading()) {
-            <div class="col-span-full text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-              <p class="text-gray-500 italic">No sessions found. Create one to get started!</p>
-            </div>
-          }
-        }
+            }
+          </tbody>
+        </table>
       </div>
 
       @if (hasMore()) {
@@ -130,10 +186,12 @@ export class SessionListComponent implements OnInit {
   newSession = signal({ title: '', mission: '', charter: '', machine_name: '', duration_minutes: 60 });
   searchQuery = signal('');
   
-  // Pagination state
+  // Pagination & Sort state
   total = signal(0);
   limit = 12;
   offset = signal(0);
+  sortBy = signal<string>('created_at');
+  sortOrder = signal<'ASC' | 'DESC'>('DESC');
   isLoading = signal(false);
   hasMore = signal(false);
 
@@ -157,6 +215,16 @@ export class SessionListComponent implements OnInit {
     this.searchSubject.next(query);
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      this.sortOrder.set(this.sortOrder() === 'ASC' ? 'DESC' : 'ASC');
+    } else {
+      this.sortBy.set(column);
+      this.sortOrder.set('DESC');
+    }
+    this.resetAndLoad();
+  }
+
   resetAndLoad() {
     this.offset.set(0);
     this.sessions.set([]);
@@ -165,7 +233,13 @@ export class SessionListComponent implements OnInit {
 
   loadSessions() {
     this.isLoading.set(true);
-    this.api.getSessions(this.searchQuery(), this.limit, this.offset()).subscribe(res => {
+    this.api.getSessions(
+      this.searchQuery(), 
+      this.limit, 
+      this.offset(), 
+      this.sortBy(), 
+      this.sortOrder()
+    ).subscribe(res => {
       const current = this.sessions();
       this.sessions.set([...current, ...res.sessions]);
       this.total.set(res.pagination.total);
@@ -205,10 +279,10 @@ export class SessionListComponent implements OnInit {
 
   statusClasses(status: string) {
     switch (status) {
-      case 'in-progress': return 'bg-green-100 text-green-800';
-      case 'debriefing': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-blue-100 text-blue-800';
+      case 'in-progress': return 'bg-black text-white dark:bg-white dark:text-black font-bold ring-1 ring-black';
+      case 'debriefing': return 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100 border border-gray-900';
+      case 'completed': return 'bg-white text-gray-500 dark:bg-gray-900 dark:text-gray-500 border border-gray-300 italic';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
   }
 }

@@ -2,20 +2,26 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// List all sessions (with search and pagination)
+// List all sessions (with search, pagination, and sorting)
 router.get('/', async (req, res, next) => {
   try {
-    const { search, limit = 20, offset = 0 } = req.query;
+    const { search, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC' } = req.query;
+    
+    // Whitelist for allowed sorting columns
+    const allowedColumns = ['title', 'status', 'machine_name', 'created_at', 'duration_minutes'];
+    const safeSortBy = allowedColumns.includes(sortBy) ? sortBy : 'created_at';
+    const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+
     let query = 'SELECT *, COUNT(*) OVER() as total_count FROM sessions';
     const params = [];
 
     if (search) {
       query += ' WHERE title ILIKE $1 OR machine_name ILIKE $1';
       params.push(`%${search}%`);
-      query += ` ORDER BY created_at DESC LIMIT $2 OFFSET $3`;
+      query += ` ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $2 OFFSET $3`;
       params.push(parseInt(limit), parseInt(offset));
     } else {
-      query += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`;
+      query += ` ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $1 OFFSET $2`;
       params.push(parseInt(limit), parseInt(offset));
     }
 
