@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
 import { ButtonComponent } from '../../components/button/button';
-import { CardComponent } from '../../components/card/card';
 import { ModalComponent } from '../../components/modal/modal';
 import { InputComponent } from '../../components/input/input';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
@@ -15,7 +14,6 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
     CommonModule, 
     RouterLink, 
     ButtonComponent, 
-    CardComponent, 
     ModalComponent, 
     InputComponent
   ],
@@ -44,36 +42,36 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
               <th (click)="toggleSort('title')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-between">
                   <span>Session Title / Mission</span>
-                  <span class="ml-2">
+                  <span class="ml-2 font-mono">
                     @if (sortBy() === 'title') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                    @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
                   </span>
                 </div>
               </th>
               <th (click)="toggleSort('machine_name')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-between">
                   <span>Machine</span>
-                  <span class="ml-2">
+                  <span class="ml-2 font-mono">
                     @if (sortBy() === 'machine_name') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                    @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
                   </span>
                 </div>
               </th>
               <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-between">
                   <span>Created</span>
-                  <span class="ml-2">
+                  <span class="ml-2 font-mono">
                     @if (sortBy() === 'created_at') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                    @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
                   </span>
                 </div>
               </th>
               <th (click)="toggleSort('status')" class="group cursor-pointer px-4 py-3 text-right text-xs font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-end">
                   <span>Status</span>
-                  <span class="ml-2">
+                  <span class="ml-2 font-mono">
                     @if (sortBy() === 'status') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50">↓</span> }
+                    @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
                   </span>
                 </div>
               </th>
@@ -91,14 +89,14 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                   </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap border-r-2 border-black dark:border-white hidden md:table-cell">
-                  <span class="text-xs font-bold font-mono text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1">
+                  <span class="text-xs font-black font-mono text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1">
                     {{ session.machine_name || '---' }}
                   </span>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap hidden sm:table-cell border-r-2 border-black dark:border-white">
                   <div class="flex flex-col">
-                    <span class="text-xs font-black text-gray-900 dark:text-white uppercase">{{ session.created_at | date:'MMM dd, yyyy' }}</span>
-                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5">{{ session.created_at | date:'shortTime' }}</span>
+                    <span class="text-xs font-black font-mono text-gray-900 dark:text-white uppercase">{{ session.created_at | date:'MMM dd, yyyy' }}</span>
+                    <span class="text-[10px] font-black font-mono text-gray-500 dark:text-gray-400 mt-0.5">{{ session.created_at | date:'shortTime' }}</span>
                   </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-right">
