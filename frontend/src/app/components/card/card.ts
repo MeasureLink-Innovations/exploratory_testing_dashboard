@@ -4,7 +4,7 @@ import { Component, input } from '@angular/core';
   selector: 'app-card',
   standalone: true,
   template: `
-    <div class="bg-white dark:bg-gray-900 overflow-hidden e-ink-border e-ink-shadow h-full flex flex-col">
+    <div class="bg-white dark:bg-gray-900 overflow-hidden e-ink-border e-ink-shadow flex flex-col">
       @if (title()) {
         <div class="px-4 py-4 border-b-2 border-gray-900 dark:border-gray-100 sm:px-6 bg-gray-50 dark:bg-gray-800 flex justify-between items-center">
           <h3 class="text-lg leading-6 font-black uppercase tracking-tight text-gray-900 dark:text-white">{{ title() }}</h3>

@@ -15,17 +15,17 @@ import { ModalComponent } from '../../components/modal/modal';
     <div class="flex flex-col h-screen max-w-[1600px] mx-auto overflow-hidden px-2 sm:px-6">
     @if (session()) {
       <!-- 1. HEADER AREA (Locked Top) -->
-      <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white pb-3 pt-2 relative z-[100]">
+      <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-4 border-black dark:border-white pb-2 pt-2 relative z-[100]">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
           <div class="space-y-0.5 w-full md:w-auto">
             <nav class="flex" aria-label="Breadcrumb">
               <ol class="flex items-center space-x-2 text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                <li><a routerLink="/sessions" class="hover:underline">Manifest</a></li>
+                <li><a routerLink="/sessions" class="hover:underline font-mono">Manifest</a></li>
                 <li>/</li>
                 <li class="text-black dark:text-white font-mono">ID:{{ session()?.id }}</li>
               </ol>
             </nav>
-            <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words">
+            <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words font-mono">
               {{ session()?.title }}
             </h2>
           </div>
@@ -33,45 +33,45 @@ import { ModalComponent } from '../../components/modal/modal';
           <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
             @if (session()?.status === 'in-progress') {
               <div class="flex items-center px-2 py-1 bg-black text-white dark:bg-white dark:text-black font-mono text-xs border-2 border-black dark:border-white">
-                <span class="mr-1.5 opacity-50">T-</span>{{ timeRemaining() }}
+                <span class="mr-1.5 opacity-50 font-mono">T-</span>{{ timeRemaining() }}
               </div>
             } @else if (session()?.status === 'completed') {
-              <div class="flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[9px] font-black border border-gray-300 dark:border-gray-700 uppercase tracking-widest">
+              <div class="flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[9px] font-black border border-gray-300 dark:border-gray-700 uppercase tracking-widest font-mono">
                 ARCHIVED
               </div>
             }
             
             <div class="flex flex-grow md:flex-grow-0 bg-white dark:bg-gray-900 border border-black dark:border-white p-0.5 justify-center">
               @if (session()?.status === 'planned') {
-                <app-button size="sm" class="w-full md:w-auto" (onClick)="openStartModal()">BEGIN</app-button>
+                <app-button size="sm" class="w-full md:w-auto font-black" (onClick)="openStartModal()">BEGIN_SESSION</app-button>
               } @else if (session()?.status === 'in-progress') {
-                <app-button variant="danger" size="sm" class="w-full md:w-auto" (onClick)="moveToDebriefing()">END</app-button>
+                <app-button variant="danger" size="sm" class="w-full md:w-auto font-black" (onClick)="moveToDebriefing()">END_LOGGING</app-button>
               } @else if (session()?.status === 'debriefing') {
-                <app-button size="sm" class="w-full md:w-auto" (onClick)="completeSession()">FINALIZE</app-button>
+                <app-button size="sm" class="w-full md:w-auto bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-black" (onClick)="completeSession()">FINALIZE_MANIFEST</app-button>
               }
             </div>
           </div>
         </div>
 
         <!-- 2. PERSISTENT BRIEF (Locked Top Layer 2) -->
-        <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 border-2 border-black dark:border-white grid grid-cols-1 md:grid-cols-2 gap-3 relative z-[90]">
+        <div class="mt-2 p-2 bg-gray-50 dark:bg-gray-800/50 border-2 border-black dark:border-white grid grid-cols-1 md:grid-cols-2 gap-2 relative z-[90]">
           <div>
-            <span class="text-[8px] font-black uppercase tracking-widest text-gray-500 block mb-0.5 italic">Charter</span>
-            <h3 class="text-[10px] sm:text-xs font-black text-black dark:text-white uppercase line-clamp-1 border-l-2 border-black/10 pl-2">{{ session()?.charter }}</h3>
+            <span class="text-[8px] font-black font-mono uppercase tracking-widest text-gray-500 block mb-0.5">[CHARTER_SCOPE]</span>
+            <h3 class="text-[9px] sm:text-[10px] font-black text-black dark:text-white uppercase line-clamp-1 border-l-2 border-black/10 pl-2 font-mono">{{ session()?.charter }}</h3>
           </div>
           <div class="md:border-l md:pl-4 border-black/10">
-            <span class="text-[8px] font-black uppercase tracking-widest text-gray-500 block mb-0.5 italic">Mission</span>
-            <p class="text-[10px] sm:text-xs font-bold text-gray-800 dark:text-gray-200 italic line-clamp-1 border-l-2 border-black/10 pl-2">"{{ session()?.mission }}"</p>
+            <span class="text-[8px] font-black font-mono uppercase tracking-widest text-gray-500 block mb-0.5">[OPERATIONAL_MISSION]</span>
+            <p class="text-[9px] sm:text-[10px] font-bold text-gray-800 dark:text-gray-200 italic line-clamp-1 border-l-2 border-black/10 pl-2 font-mono">"{{ session()?.mission }}"</p>
           </div>
         </div>
       </div>
 
       <!-- 3. MAIN WORK AREA -->
-      <div class="flex-grow overflow-hidden pt-3 pb-2">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start overflow-y-auto lg:overflow-hidden pr-1 custom-scrollbar">
+      <div class="flex-grow overflow-hidden pt-2 pb-2">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full items-start">
           
           <!-- TIMELINE COLUMN (Left Reference - 5/12) -->
-          <div class="order-2 lg:order-1 lg:col-span-5 h-auto lg:h-full flex flex-col min-h-0 relative z-10 lg:overflow-y-auto lg:pr-4 custom-scrollbar">
+          <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 overflow-y-auto pr-2 custom-scrollbar">
             
             <!-- Post-Session Briefing -->
             @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
@@ -86,11 +86,11 @@ import { ModalComponent } from '../../components/modal/modal';
                         (valueChange)="debriefSummary.set($event)"
                       />
                       <div class="flex justify-end">
-                        <app-button (onClick)="saveDebriefSummary()">SAVE REPORT</app-button>
+                        <app-button class="font-black" (onClick)="saveDebriefSummary()">SAVE_REPORT</app-button>
                       </div>
                     </div>
                   } @else {
-                    <p class="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap leading-relaxed">{{ session()?.debrief_summary || 'NO REPORT FILED.' }}</p>
+                    <p class="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap leading-relaxed font-mono">{{ session()?.debrief_summary || 'NO_REPORT_FILED.' }}</p>
                   }
                 </app-card>
               </div>
@@ -145,8 +145,8 @@ import { ModalComponent } from '../../components/modal/modal';
                             }
 
                             @if (session()?.status !== 'completed') {
-                              <button (click)="openLinkModal(log)" class="text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-                                + CITE
+                              <button (click)="openLinkModal(log)" class="text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors font-mono">
+                                + CITE_REF
                               </button>
                             }
                           </div>
@@ -158,7 +158,7 @@ import { ModalComponent } from '../../components/modal/modal';
 
                 @if (hasMoreLogs()) {
                   <div class="flex justify-center mt-8 pb-10 lg:pb-0">
-                    <app-button variant="ghost" [disabled]="isLoadingLogs()" (onClick)="loadMoreLogs()">LOAD MORE</app-button>
+                    <app-button variant="ghost" [disabled]="isLoadingLogs()" class="font-black" (onClick)="loadMoreLogs()">LOAD_MORE</app-button>
                   </div>
                 }
               </div>
@@ -166,16 +166,24 @@ import { ModalComponent } from '../../components/modal/modal';
           </div>
 
           <!-- TOOLBELT COLUMN (Right Workstation - 7/12) -->
-          <div class="order-1 lg:order-2 lg:col-span-7 h-auto lg:h-full flex flex-col min-h-0 space-y-4 relative z-30">
+          <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 space-y-4">
             
+            <!-- Technical Workspace Divider -->
+            <div class="flex-shrink-0">
+              <div class="flex items-center space-x-2">
+                <span class="text-[8px] font-black font-mono text-gray-400 uppercase tracking-widest">[UNIT_EXECUTION_ZONE]</span>
+                <div class="flex-grow border-t-2 border-black/10 dark:border-white/10"></div>
+              </div>
+            </div>
+
             <!-- Capture Area -->
-            <div class="flex-shrink-0 lg:sticky lg:top-0">
+            <div class="flex-shrink-0">
               @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
-                <app-card title="Active Capture" class="border-2 border-black dark:border-white">
-                  <div class="space-y-3 p-1">
+                <app-card title="Observation Capture" class="border-2 border-black dark:border-white">
+                  <div class="space-y-2 p-0.5">
                     <app-input 
                       type="textarea" 
-                      placeholder="RECORD FINDING..." 
+                      placeholder="RECORD SYSTEM_OBSERVATION..." 
                       [value]="logEntry()"
                       (valueChange)="logEntry.set($event)"
                       class="text-base font-black"
@@ -186,19 +194,19 @@ import { ModalComponent } from '../../components/modal/modal';
                         @for (art of selectedArtifacts(); track art.id) {
                           <span class="inline-flex items-center px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[8px] font-black font-mono border border-white/20 uppercase">
                             {{ art.name }}
-                            <button (click)="unselectArtifact(art.id)" class="ml-1.5 opacity-50 hover:opacity-100">×</button>
+                            <button (click)="unselectArtifact(art.id)" class="ml-1.5 opacity-50 hover:opacity-100 font-mono">×</button>
                           </span>
                         }
                       </div>
                     }
 
-                    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                      <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900">
-                        <button (click)="logCategory.set('note')" [class]="'px-3 py-1 text-[9px] font-black uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Note</button>
-                        <button (click)="logCategory.set('finding')" [class]="'px-3 py-1 text-[9px] font-black uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Finding</button>
-                        <button (click)="logCategory.set('issue')" [class]="'px-3 py-1 text-[9px] font-black uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Issue</button>
+                    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+                      <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-8">
+                        <button (click)="logCategory.set('note')" [class]="'px-3 text-[9px] font-black uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Note</button>
+                        <button (click)="logCategory.set('finding')" [class]="'px-3 text-[9px] font-black uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Finding</button>
+                        <button (click)="logCategory.set('issue')" [class]="'px-3 text-[9px] font-black uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Issue</button>
                       </div>
-                      <app-button size="md" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">COMMIT</app-button>
+                      <app-button size="sm" class="bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-black" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">COMMIT_ENTRY</app-button>
                     </div>
                   </div>
                 </app-card>
@@ -206,47 +214,47 @@ import { ModalComponent } from '../../components/modal/modal';
             </div>
 
             <!-- Evidence Pool -->
-            <div class="flex-grow overflow-hidden flex flex-col min-h-[300px] lg:min-h-0">
-              <app-card title="Evidence Pool">
+            <div class="flex-grow overflow-hidden flex flex-col min-h-0">
+              <app-card title="Artifact Evidence Pool" class="h-full">
                 <div class="flex flex-col h-full space-y-3">
                   <div class="flex justify-between items-center">
                     <div class="flex gap-1">
-                      <button (click)="artifactFilter.set('all')" [class]="'px-2 py-0.5 text-[8px] font-black uppercase border ' + (artifactFilter() === 'all' ? 'bg-black text-white' : 'text-gray-400')">All</button>
-                      <button (click)="artifactFilter.set('screenshot')" [class]="'px-2 py-0.5 text-[8px] font-black uppercase border ' + (artifactFilter() === 'screenshot' ? 'bg-black text-white' : 'text-gray-400')">Img</button>
+                      <button (click)='artifactFilter.set("all")' [class]="'px-2 py-0.5 text-[8px] font-black font-mono uppercase border ' + (artifactFilter() === 'all' ? 'bg-black text-white' : 'text-gray-400')">FILTER:ALL</button>
+                      <button (click)='artifactFilter.set("screenshot")' [class]="'px-2 py-0.5 text-[8px] font-black font-mono uppercase border ' + (artifactFilter() === 'screenshot' ? 'bg-black text-white' : 'text-gray-400')">FILTER:IMG</button>
                     </div>
                     
                     @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
                       <div class="flex items-center gap-1.5">
                         <input type="file" #fileInput class="hidden" multiple (change)="uploadFiles($event)">
-                        <app-button variant="secondary" size="sm" [disabled]="isUploading()" (onClick)="fileInput.click()">+ UPLOAD</app-button>
+                        <app-button variant="secondary" size="sm" [disabled]="isUploading()" class="font-black" (onClick)="fileInput.click()">+ UPLOAD_ARTIFACTS</app-button>
                       </div>
                     }
                   </div>
                   
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1 custom-scrollbar border-t border-black/5 pt-3 flex-grow">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1 custom-scrollbar border-t-2 border-black/10 pt-3 flex-grow">
                     @for (art of filteredArtifacts(); track art.id) {
                       <div class="group relative flex flex-col items-center p-2 border border-black/10 dark:border-white/10 hover:border-black transition-all cursor-pointer bg-white dark:bg-gray-900" [class.bg-gray-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
                         @if (isImage(art.name)) {
-                          <div class="h-20 w-full bg-gray-50 flex items-center justify-center overflow-hidden mb-2 border border-black/5">
+                          <div class="h-16 w-full bg-gray-50 flex items-center justify-center overflow-hidden mb-2 border border-black/5">
                              <img [src]="getArtifactUrl(art.id)" class="h-full w-full object-cover">
                           </div>
                         } @else {
-                          <div class="h-20 w-full bg-black/5 flex items-center justify-center mb-2">
-                             <span class="text-[8px] font-black uppercase opacity-30">{{ art.type }}</span>
+                          <div class="h-16 w-full bg-black/5 flex items-center justify-center mb-2">
+                             <span class="text-[8px] font-black uppercase opacity-30 font-mono">{{ art.type }}</span>
                           </div>
                         }
                         <span class="text-[8px] font-black font-mono text-gray-500 truncate w-full text-center px-1">{{ art.name }}</span>
                         
                         <div class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-2 space-y-1">
-                          <button (click)="$event.stopPropagation(); openPreview(art)" class="w-full py-1 bg-white text-black text-[9px] font-black uppercase">PREVIEW</button>
+                          <button (click)="$event.stopPropagation(); openPreview(art)" class="w-full py-1 bg-white text-black text-[9px] font-black uppercase font-mono">PREVIEW_FILE</button>
                         </div>
 
                         @if (getLinkedLogsForArtifact(art.id).length > 0) {
-                          <div class="absolute -top-1.5 -left-1.5 bg-black text-white dark:bg-white dark:text-black px-1 py-0.5 text-[7px] font-black ring-1 ring-white">CITED</div>
+                          <div class="absolute -top-1.5 -left-1.5 bg-black text-white dark:bg-white dark:text-black px-1 py-0.5 text-[7px] font-black ring-1 ring-white font-mono">CITED</div>
                         }
                       </div>
                     } @empty {
-                      <p class="col-span-full text-center text-gray-400 text-[8px] font-black uppercase py-10">Pool Empty</p>
+                      <p class="col-span-full text-center text-gray-400 text-[8px] font-black uppercase py-10 font-mono">BUFFER_EMPTY</p>
                     }
                   </div>
                 </div>
@@ -257,31 +265,31 @@ import { ModalComponent } from '../../components/modal/modal';
       </div>
     } @else {
       <div class="flex justify-center py-40">
-        <span class="text-sm font-black uppercase tracking-[0.5em] animate-pulse">Initializing Manifest...</span>
+        <span class="text-sm font-black uppercase tracking-[0.5em] animate-pulse font-mono">INITIALIZING_MANIFEST...</span>
       </div>
     }
 
     <!-- Start Session Modal -->
     <app-modal [isOpen]="isStartModalOpen()" title="Start Session" (close)="isStartModalOpen.set(false)">
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">Please confirm the machine name before starting the session.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 font-mono">Confirm [UNIT_DESIGNATION] before execution.</p>
         <app-input 
-          label="Machine Name" 
+          label="Unit Designation" 
           placeholder="e.g. Test-VM-01" 
           [value]="machineName()"
           (valueChange)="machineName.set($event)"
         />
       </div>
       <div footer>
-        <app-button variant="secondary" (onClick)="isStartModalOpen.set(false)">Cancel</app-button>
-        <app-button [disabled]="!machineName()" (onClick)="startSession()">Start Now</app-button>
+        <app-button variant="secondary" class="font-black" (onClick)="isStartModalOpen.set(false)">ABORT</app-button>
+        <app-button [disabled]="!machineName()" class="font-black" (onClick)="startSession()">EXECUTE_START</app-button>
       </div>
     </app-modal>
 
     <!-- Link Artifacts Modal -->
     <app-modal [isOpen]="isLinkModalOpen()" title="Link Artifacts" (close)="isLinkModalOpen.set(false)">
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase">Select artifacts to link to this log entry.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 font-black uppercase font-mono">[SELECT_RELEVANT_CITATIONS]</p>
         <div class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
           @for (art of artifacts(); track art.id) {
             <div 
@@ -294,8 +302,8 @@ import { ModalComponent } from '../../components/modal/modal';
         </div>
       </div>
       <div footer>
-        <app-button variant="secondary" (onClick)="isLinkModalOpen.set(false)">Cancel</app-button>
-        <app-button (onClick)="linkArtifacts()">Link Selected</app-button>
+        <app-button variant="secondary" class="font-black" (onClick)="isLinkModalOpen.set(false)">DISMISS</app-button>
+        <app-button class="font-black" (onClick)="linkArtifacts()">SAVE_CITATIONS</app-button>
       </div>
     </app-modal>
 
@@ -310,15 +318,15 @@ import { ModalComponent } from '../../components/modal/modal';
               {{ previewContent() }}
             } @else {
               <div class="flex justify-center py-10">
-                <span class="animate-pulse font-black">FETCHING BUFFER...</span>
+                <span class="animate-pulse font-black font-mono">FETCHING_BUFFER...</span>
               </div>
             }
           </div>
         } @else {
           <div class="py-20 text-center space-y-6">
             <svg class="h-20 w-20 mx-auto text-gray-200 dark:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Preview unavailable.</p>
-            <app-button (onClick)="downloadArtifact(previewArtifact())">Download Archive</app-button>
+            <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px] font-mono">FILE_TYPE_UNSUPPORTED</p>
+            <app-button class="font-black" (onClick)="downloadArtifact(previewArtifact())">DOWNLOAD_ARCHIVE</app-button>
           </div>
         }
       </div>
@@ -327,7 +335,7 @@ import { ModalComponent } from '../../components/modal/modal';
           <div class="text-[9px] font-black uppercase text-gray-400 font-mono">
             REF:{{ previewArtifact()?.id }}
           </div>
-          <app-button variant="secondary" (onClick)="isPreviewModalOpen.set(false)">DISMISS</app-button>
+          <app-button variant="secondary" class="font-black" (onClick)="isPreviewModalOpen.set(false)">DISMISS</app-button>
         </div>
       </div>
     </app-modal>
@@ -454,17 +462,11 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   loadSession() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.getSession(id).subscribe(session => {
-      // The session endpoint returns initial logs and artifacts
       this.session.set(session);
       this.logs.set(session.logs);
       this.artifacts.set(session.artifacts);
       this.debriefSummary.set(session.debrief_summary || '');
-      
-      // Check if there might be more logs based on the returned count
-      // (Backend detail endpoint returns all, but we might want to paginate later)
-      // For now, let's assume we want to handle pagination strictly via /logs/session/:id
       this.hasMoreLogs.set(false); 
-      
       if (session.machine_name) this.machineName.set(session.machine_name);
     });
   }
@@ -528,7 +530,6 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
       artifact_ids: this.selectedArtifacts().map(a => a.id)
     }).subscribe({
       next: (newLog) => {
-        // Incremental update: append new log to the end (since order is ASC)
         this.logs.update(l => [...l, newLog]);
         this.logEntry.set('');
         this.selectedArtifacts.set([]);
@@ -551,7 +552,6 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
 
     this.api.uploadArtifact(formData).subscribe({
       next: (newArtifacts) => {
-        // Incremental update: append new artifacts
         this.artifacts.update(a => [...a, ...newArtifacts]);
         this.isUploading.set(false);
       },
@@ -601,7 +601,6 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   linkArtifacts() {
     const logId = this.activeLogToLink().id;
     this.api.linkArtifactsToLog(logId, this.tempLinkSelection()).subscribe(() => {
-      // Update local log artifacts incrementally
       const updatedArtifacts = this.artifacts().filter(a => this.tempLinkSelection().includes(a.id));
       this.logs.update(list => list.map(l => 
         l.id === logId ? { ...l, artifacts: updatedArtifacts } : l
