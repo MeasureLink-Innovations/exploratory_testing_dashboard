@@ -14,83 +14,105 @@ import { ModalComponent } from '../../components/modal/modal';
   template: `
     <div class="flex flex-col h-screen max-w-[1600px] mx-auto overflow-hidden px-2 sm:px-6">
     @if (session()) {
-      <!-- 1. HEADER AREA (Locked Top) -->
-      <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-4 border-black dark:border-white pb-2 pt-2 relative z-[100]">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
-          <div class="space-y-0.5 w-full md:w-auto">
+      <!-- 1. HEADER AREA -->
+      <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white pb-3 pt-3 relative z-[100]">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
+          <div class="space-y-1 w-full md:w-auto">
             <nav class="flex" aria-label="Breadcrumb">
-              <ol class="flex items-center space-x-2 text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              <ol class="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
                 <li><a routerLink="/sessions" class="hover:underline font-mono">Manifest</a></li>
                 <li>/</li>
                 <li class="text-black dark:text-white font-mono">ID:{{ session()?.id }}</li>
               </ol>
             </nav>
-            <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words font-mono">
+            <h2 class="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words">
               {{ session()?.title }}
             </h2>
           </div>
           
           <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
             @if (session()?.status === 'in-progress') {
-              <div class="flex items-center px-2 py-1 bg-black text-white dark:bg-white dark:text-black font-mono text-xs border-2 border-black dark:border-white">
-                <span class="mr-1.5 opacity-50 font-mono">T-</span>{{ timeRemaining() }}
+              <div class="flex items-center px-3 py-1 bg-black text-white dark:bg-white dark:text-black font-mono text-xs border border-black dark:border-white">
+                <span class="mr-1.5 opacity-50">T-</span>{{ timeRemaining() }}
               </div>
             } @else if (session()?.status === 'completed') {
-              <div class="flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[9px] font-black border border-gray-300 dark:border-gray-700 uppercase tracking-widest font-mono">
-                ARCHIVED
+              <div class="flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold border border-gray-200 dark:border-gray-700 uppercase tracking-widest">
+                Archived
               </div>
             }
             
             <div class="flex flex-grow md:flex-grow-0 bg-white dark:bg-gray-900 border border-black dark:border-white p-0.5 justify-center">
               @if (session()?.status === 'planned') {
-                <app-button size="sm" class="w-full md:w-auto font-black" (onClick)="openStartModal()">BEGIN_SESSION</app-button>
+                <app-button size="sm" class="w-full md:w-auto font-bold" (onClick)="openStartModal()">Begin Session</app-button>
               } @else if (session()?.status === 'in-progress') {
-                <app-button variant="danger" size="sm" class="w-full md:w-auto font-black" (onClick)="moveToDebriefing()">END_LOGGING</app-button>
+                <app-button variant="danger" size="sm" class="w-full md:w-auto font-bold" (onClick)="moveToDebriefing()">End Logging</app-button>
               } @else if (session()?.status === 'debriefing') {
-                <app-button size="sm" class="w-full md:w-auto bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-black" (onClick)="completeSession()">FINALIZE_MANIFEST</app-button>
+                <app-button size="sm" class="w-full md:w-auto bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-bold" (onClick)="completeSession()">Finalize Manifest</app-button>
               }
             </div>
           </div>
         </div>
 
-        <!-- 2. PERSISTENT BRIEF (Locked Top Layer 2) -->
-        <div class="mt-2 p-2 bg-gray-50 dark:bg-gray-800/50 border-2 border-black dark:border-white grid grid-cols-1 md:grid-cols-2 gap-2 relative z-[90]">
+        <!-- 2. PERSISTENT BRIEF -->
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 border border-black dark:border-white grid grid-cols-1 md:grid-cols-2 gap-4 relative z-[90]">
           <div>
-            <span class="text-[8px] font-black font-mono uppercase tracking-widest text-gray-500 block mb-0.5">[CHARTER_SCOPE]</span>
-            <h3 class="text-[9px] sm:text-[10px] font-black text-black dark:text-white uppercase line-clamp-1 border-l-2 border-black/10 pl-2 font-mono">{{ session()?.charter }}</h3>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">[Charter Scope]</span>
+            <h3 class="text-xs sm:text-sm font-bold text-black dark:text-white line-clamp-2 border-l-2 border-black/10 pl-3 leading-relaxed">{{ session()?.charter }}</h3>
           </div>
-          <div class="md:border-l md:pl-4 border-black/10">
-            <span class="text-[8px] font-black font-mono uppercase tracking-widest text-gray-500 block mb-0.5">[OPERATIONAL_MISSION]</span>
-            <p class="text-[9px] sm:text-[10px] font-bold text-gray-800 dark:text-gray-200 italic line-clamp-1 border-l-2 border-black/10 pl-2 font-mono">"{{ session()?.mission }}"</p>
+          <div class="md:border-l md:pl-6 border-black/10">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">[Operational Mission]</span>
+            <p class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 italic line-clamp-2 border-l-2 border-black/10 pl-3 leading-relaxed">"{{ session()?.mission }}"</p>
           </div>
         </div>
       </div>
 
       <!-- 3. MAIN WORK AREA -->
-      <div class="flex-grow overflow-hidden pt-2 pb-2">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full items-start">
+      <div class="flex-grow overflow-hidden pt-4 pb-2">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start">
           
-          <!-- TIMELINE COLUMN (Left Reference - 5/12) -->
+          <!-- TIMELINE COLUMN -->
           <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 overflow-y-auto pr-2 custom-scrollbar">
             
-            <!-- Post-Session Briefing -->
+            @if (session()?.status === 'planned') {
+              <div class="mb-6">
+                <div class="p-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]">
+                  <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0 p-2 bg-white text-black dark:bg-black dark:text-white rounded-none border border-black dark:border-white">
+                      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div class="space-y-3">
+                      <h4 class="text-lg font-black uppercase tracking-tight">System Ready for Execution</h4>
+                      <p class="text-xs font-medium leading-relaxed opacity-90">
+                        This session is in the **Planned** state. To begin your exploratory audit, you must first designate the unit (machine or environment) under test.
+                      </p>
+                      <div class="pt-2">
+                        <app-button variant="secondary" size="sm" class="font-bold !bg-white !text-black border-black" (onClick)="openStartModal()">Execute Start Protocol</app-button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
             @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
-              <div class="mb-4">
+              <div class="mb-6">
                 <app-card title="Post-Testing Summary">
                   @if (session()?.status === 'debriefing') {
                     <div class="space-y-3">
                       <app-input 
                         type="textarea" 
-                        placeholder="SUMMARIZE FINDINGS..." 
+                        placeholder="Summarize findings..." 
                         [value]="debriefSummary()"
                         (valueChange)="debriefSummary.set($event)"
                       />
                       <div class="flex justify-end">
-                        <app-button class="font-black" (onClick)="saveDebriefSummary()">SAVE_REPORT</app-button>
+                        <app-button class="font-bold" (onClick)="saveDebriefSummary()">Save Report</app-button>
                       </div>
                     </div>
                   } @else {
-                    <p class="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap leading-relaxed font-mono">{{ session()?.debrief_summary || 'NO_REPORT_FILED.' }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap leading-relaxed">{{ session()?.debrief_summary || 'No report filed.' }}</p>
                   }
                 </app-card>
               </div>
@@ -100,10 +122,10 @@ import { ModalComponent } from '../../components/modal/modal';
               <div header-actions>
                 <button 
                   (click)="toggleLogSort()" 
-                  class="p-1 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                  class="p-1 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                   [title]="'Switch to ' + (logSortOrder() === 'ASC' ? 'Newest First' : 'Oldest First')"
                 >
-                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
+                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                     @if (logSortOrder() === 'ASC') {
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                     } @else {
@@ -118,18 +140,18 @@ import { ModalComponent } from '../../components/modal/modal';
                     <li>
                       <div class="relative pb-8">
                         @if (!last) {
-                          <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-black dark:bg-white opacity-10" aria-hidden="true"></span>
+                          <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-black dark:bg-white opacity-5" aria-hidden="true"></span>
                         }
                         <div class="relative flex space-x-3">
                           <div class="flex-shrink-0">
-                            <span [class]="'h-6 w-6 flex items-center justify-center border-2 border-black dark:border-white font-black text-[9px] ' + categoryIconClass(log.category)">
+                            <span [class]="'h-6 w-6 flex items-center justify-center border border-black dark:border-white font-bold text-[10px] ' + categoryIconClass(log.category)">
                               {{ log.category.charAt(0).toUpperCase() }}
                             </span>
                           </div>
                           <div class="min-w-0 flex-1 pt-1 space-y-2">
                             <div class="flex justify-between items-start space-x-2">
-                              <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug break-words tracking-tight">{{ log.content }}</p>
-                              <div class="text-[8px] font-black font-mono text-gray-400 whitespace-nowrap pt-0.5">
+                              <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug break-words tracking-tight">{{ log.content }}</p>
+                              <div class="text-[9px] font-bold font-mono text-gray-400 whitespace-nowrap pt-0.5">
                                 {{ log.timestamp | date:'HH:mm' }}
                               </div>
                             </div>
@@ -137,16 +159,16 @@ import { ModalComponent } from '../../components/modal/modal';
                             @if (log.artifacts && log.artifacts.length > 0) {
                               <div class="flex flex-wrap gap-1">
                                 @for (art of log.artifacts; track art.id) {
-                                  <div (click)="openPreview(art)" class="flex items-center space-x-1 px-1.5 py-0.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white transition-colors cursor-pointer text-[8px] font-bold uppercase tracking-tighter max-w-[100px]">
-                                    <span class="truncate font-mono">{{ art.name }}</span>
+                                  <div (click)="openPreview(art)" class="flex items-center space-x-1 px-1.5 py-0.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white transition-colors cursor-pointer text-[9px] font-bold max-w-[120px]">
+                                    <span class="truncate">{{ art.name }}</span>
                                   </div>
                                 }
                               </div>
                             }
 
                             @if (session()?.status !== 'completed') {
-                              <button (click)="openLinkModal(log)" class="text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors font-mono">
-                                + CITE_REF
+                              <button (click)="openLinkModal(log)" class="text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+                                + Cite Ref
                               </button>
                             }
                           </div>
@@ -158,103 +180,107 @@ import { ModalComponent } from '../../components/modal/modal';
 
                 @if (hasMoreLogs()) {
                   <div class="flex justify-center mt-8 pb-10 lg:pb-0">
-                    <app-button variant="ghost" [disabled]="isLoadingLogs()" class="font-black" (onClick)="loadMoreLogs()">LOAD_MORE</app-button>
+                    <app-button variant="ghost" [disabled]="isLoadingLogs()" class="font-bold" (onClick)="loadMoreLogs()">Load More</app-button>
                   </div>
                 }
               </div>
             </app-card>
           </div>
 
-          <!-- TOOLBELT COLUMN (Right Workstation - 7/12) -->
-          <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 space-y-4">
+          <!-- TOOLBELT COLUMN -->
+          <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 space-y-6">
             
-            <!-- Technical Workspace Divider -->
             <div class="flex-shrink-0">
-              <div class="flex items-center space-x-2">
-                <span class="text-[8px] font-black font-mono text-gray-400 uppercase tracking-widest">[UNIT_EXECUTION_ZONE]</span>
-                <div class="flex-grow border-t-2 border-black/10 dark:border-white/10"></div>
+              <div class="flex items-center space-x-3">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">[Execution Zone]</span>
+                <div class="flex-grow border-t border-black/10 dark:border-white/10"></div>
               </div>
             </div>
 
-            <!-- Capture Area -->
             <div class="flex-shrink-0">
               @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
                 <app-card title="Observation Capture" class="border-2 border-black dark:border-white">
-                  <div class="space-y-2 p-0.5">
+                  <div class="space-y-3 p-0.5">
                     <app-input 
                       type="textarea" 
-                      placeholder="RECORD SYSTEM_OBSERVATION..." 
+                      placeholder="Record observation..." 
                       [value]="logEntry()"
                       (valueChange)="logEntry.set($event)"
-                      class="text-base font-black"
+                      class="text-base font-bold"
                     />
                     
                     @if (selectedArtifacts().length > 0) {
                       <div class="flex flex-wrap gap-1.5 pb-1">
                         @for (art of selectedArtifacts(); track art.id) {
-                          <span class="inline-flex items-center px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[8px] font-black font-mono border border-white/20 uppercase">
+                          <span class="inline-flex items-center px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-bold border border-white/20">
                             {{ art.name }}
-                            <button (click)="unselectArtifact(art.id)" class="ml-1.5 opacity-50 hover:opacity-100 font-mono">×</button>
+                            <button (click)="unselectArtifact(art.id)" class="ml-1.5 opacity-60 hover:opacity-100">×</button>
                           </span>
                         }
                       </div>
                     }
 
-                    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
-                      <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-8">
-                        <button (click)="logCategory.set('note')" [class]="'px-3 text-[9px] font-black uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Note</button>
-                        <button (click)="logCategory.set('finding')" [class]="'px-3 text-[9px] font-black uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Finding</button>
-                        <button (click)="logCategory.set('issue')" [class]="'px-3 text-[9px] font-black uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Issue</button>
+                    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                      <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-9">
+                        <button (click)="logCategory.set('note')" [class]="'px-4 text-[10px] font-bold uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Note</button>
+                        <button (click)="logCategory.set('finding')" [class]="'px-4 text-[10px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Finding</button>
+                        <button (click)="logCategory.set('issue')" [class]="'px-4 text-[10px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Issue</button>
                       </div>
-                      <app-button size="sm" class="bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-black" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">COMMIT_ENTRY</app-button>
+                      <app-button size="sm" class="bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-bold" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">Commit Entry</app-button>
                     </div>
                   </div>
                 </app-card>
+              } @else if (session()?.status === 'planned') {
+                <div class="h-full flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/10">
+                   <div class="text-center space-y-4 max-w-sm">
+                     <p class="text-sm font-bold text-gray-400 uppercase tracking-widest italic">Waiting for unit designation...</p>
+                     <p class="text-xs text-gray-500 leading-relaxed">The observation capture and artifact pool will unlock once you begin the session.</p>
+                   </div>
+                </div>
               }
             </div>
 
-            <!-- Evidence Pool -->
             <div class="flex-grow overflow-hidden flex flex-col min-h-0">
               <app-card title="Artifact Evidence Pool" class="h-full">
-                <div class="flex flex-col h-full space-y-3">
+                <div class="flex flex-col h-full space-y-4">
                   <div class="flex justify-between items-center">
-                    <div class="flex gap-1">
-                      <button (click)='artifactFilter.set("all")' [class]="'px-2 py-0.5 text-[8px] font-black font-mono uppercase border ' + (artifactFilter() === 'all' ? 'bg-black text-white' : 'text-gray-400')">FILTER:ALL</button>
-                      <button (click)='artifactFilter.set("screenshot")' [class]="'px-2 py-0.5 text-[8px] font-black font-mono uppercase border ' + (artifactFilter() === 'screenshot' ? 'bg-black text-white' : 'text-gray-400')">FILTER:IMG</button>
+                    <div class="flex gap-1.5">
+                      <button (click)='artifactFilter.set("all")' [class]="'px-2.5 py-1 text-[9px] font-bold uppercase border ' + (artifactFilter() === 'all' ? 'bg-black text-white border-black' : 'text-gray-400 border-gray-200')">All</button>
+                      <button (click)='artifactFilter.set("screenshot")' [class]="'px-2.5 py-1 text-[9px] font-bold uppercase border ' + (artifactFilter() === 'screenshot' ? 'bg-black text-white border-black' : 'text-gray-400 border-gray-200')">Images</button>
                     </div>
                     
                     @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
-                      <div class="flex items-center gap-1.5">
+                      <div class="flex items-center gap-2">
                         <input type="file" #fileInput class="hidden" multiple (change)="uploadFiles($event)">
-                        <app-button variant="secondary" size="sm" [disabled]="isUploading()" class="font-black" (onClick)="fileInput.click()">+ UPLOAD_ARTIFACTS</app-button>
+                        <app-button variant="secondary" size="sm" [disabled]="isUploading()" class="font-bold" (onClick)="fileInput.click()">+ Upload Artifacts</app-button>
                       </div>
                     }
                   </div>
                   
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1 custom-scrollbar border-t-2 border-black/10 pt-3 flex-grow">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pr-1 custom-scrollbar border-t border-black/5 pt-4 flex-grow">
                     @for (art of filteredArtifacts(); track art.id) {
-                      <div class="group relative flex flex-col items-center p-2 border border-black/10 dark:border-white/10 hover:border-black transition-all cursor-pointer bg-white dark:bg-gray-900" [class.bg-gray-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
+                      <div class="group relative flex flex-col items-center p-2 border border-black/5 dark:border-white/5 hover:border-black dark:hover:border-white transition-all cursor-pointer bg-white dark:bg-gray-900" [class.bg-gray-50]="isArtifactSelected(art.id)" (click)="toggleArtifactSelection(art)">
                         @if (isImage(art.name)) {
-                          <div class="h-16 w-full bg-gray-50 flex items-center justify-center overflow-hidden mb-2 border border-black/5">
+                          <div class="h-20 w-full bg-gray-50 flex items-center justify-center overflow-hidden mb-2 border border-black/5">
                              <img [src]="getArtifactUrl(art.id)" class="h-full w-full object-cover">
                           </div>
                         } @else {
-                          <div class="h-16 w-full bg-black/5 flex items-center justify-center mb-2">
-                             <span class="text-[8px] font-black uppercase opacity-30 font-mono">{{ art.type }}</span>
+                          <div class="h-20 w-full bg-black/5 flex items-center justify-center mb-2">
+                             <span class="text-[9px] font-bold uppercase opacity-30">{{ art.type }}</span>
                           </div>
                         }
-                        <span class="text-[8px] font-black font-mono text-gray-500 truncate w-full text-center px-1">{{ art.name }}</span>
+                        <span class="text-[10px] font-bold text-gray-500 truncate w-full text-center px-1">{{ art.name }}</span>
                         
-                        <div class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-2 space-y-1">
-                          <button (click)="$event.stopPropagation(); openPreview(art)" class="w-full py-1 bg-white text-black text-[9px] font-black uppercase font-mono">PREVIEW_FILE</button>
+                        <div class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-3 space-y-2">
+                          <button (click)="$event.stopPropagation(); openPreview(art)" class="w-full py-1.5 bg-white text-black text-[10px] font-bold uppercase">Preview</button>
                         </div>
 
                         @if (getLinkedLogsForArtifact(art.id).length > 0) {
-                          <div class="absolute -top-1.5 -left-1.5 bg-black text-white dark:bg-white dark:text-black px-1 py-0.5 text-[7px] font-black ring-1 ring-white font-mono">CITED</div>
+                          <div class="absolute -top-1.5 -left-1.5 bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 text-[8px] font-bold ring-1 ring-white">Cited</div>
                         }
                       </div>
                     } @empty {
-                      <p class="col-span-full text-center text-gray-400 text-[8px] font-black uppercase py-10 font-mono">BUFFER_EMPTY</p>
+                      <p class="col-span-full text-center text-gray-400 text-xs font-bold uppercase py-12">Buffer Empty</p>
                     }
                   </div>
                 </div>
@@ -265,14 +291,14 @@ import { ModalComponent } from '../../components/modal/modal';
       </div>
     } @else {
       <div class="flex justify-center py-40">
-        <span class="text-sm font-black uppercase tracking-[0.5em] animate-pulse font-mono">INITIALIZING_MANIFEST...</span>
+        <span class="text-sm font-bold uppercase tracking-[0.4em] animate-pulse">Initializing Manifest...</span>
       </div>
     }
 
     <!-- Start Session Modal -->
     <app-modal [isOpen]="isStartModalOpen()" title="Start Session" (close)="isStartModalOpen.set(false)">
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400 font-mono">Confirm [UNIT_DESIGNATION] before execution.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Confirm Unit Designation before execution.</p>
         <app-input 
           label="Unit Designation" 
           placeholder="e.g. Test-VM-01" 
@@ -281,20 +307,20 @@ import { ModalComponent } from '../../components/modal/modal';
         />
       </div>
       <div footer>
-        <app-button variant="secondary" class="font-black" (onClick)="isStartModalOpen.set(false)">ABORT</app-button>
-        <app-button [disabled]="!machineName()" class="font-black" (onClick)="startSession()">EXECUTE_START</app-button>
+        <app-button variant="secondary" class="font-bold" (onClick)="isStartModalOpen.set(false)">Abort</app-button>
+        <app-button [disabled]="!machineName()" class="font-bold" (onClick)="startSession()">Execute Start</app-button>
       </div>
     </app-modal>
 
     <!-- Link Artifacts Modal -->
     <app-modal [isOpen]="isLinkModalOpen()" title="Link Artifacts" (close)="isLinkModalOpen.set(false)">
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400 font-black uppercase font-mono">[SELECT_RELEVANT_CITATIONS]</p>
+        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">[Select Relevant Citations]</p>
         <div class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
           @for (art of artifacts(); track art.id) {
             <div 
               (click)="toggleLinkSelection(art.id)"
-              [class]="'p-2 border-2 text-[9px] font-black font-mono uppercase cursor-pointer truncate transition-all ' + (tempLinkSelection().includes(art.id) ? 'bg-black text-white border-black' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-black dark:hover:border-white')"
+              [class]="'p-2 border text-[10px] font-bold uppercase cursor-pointer truncate transition-all ' + (tempLinkSelection().includes(art.id) ? 'bg-black text-white border-black' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-black dark:hover:border-white')"
             >
               {{ art.name }}
             </div>
@@ -302,8 +328,8 @@ import { ModalComponent } from '../../components/modal/modal';
         </div>
       </div>
       <div footer>
-        <app-button variant="secondary" class="font-black" (onClick)="isLinkModalOpen.set(false)">DISMISS</app-button>
-        <app-button class="font-black" (onClick)="linkArtifacts()">SAVE_CITATIONS</app-button>
+        <app-button variant="secondary" class="font-bold" (onClick)="isLinkModalOpen.set(false)">Dismiss</app-button>
+        <app-button class="font-bold" (onClick)="linkArtifacts()">Save Citations</app-button>
       </div>
     </app-modal>
 
@@ -311,31 +337,31 @@ import { ModalComponent } from '../../components/modal/modal';
     <app-modal [isOpen]="isPreviewModalOpen()" [title]="'Preview: ' + previewArtifact()?.name" (close)="isPreviewModalOpen.set(false)">
       <div class="flex flex-col items-center">
         @if (previewArtifact()?.type === 'screenshot') {
-          <img [src]="getArtifactUrl(previewArtifact()?.id)" class="max-w-full max-h-[70vh] object-contain border-4 border-black dark:border-white shadow-2xl">
+          <img [src]="getArtifactUrl(previewArtifact()?.id)" class="max-w-full max-h-[70vh] object-contain border-2 border-black dark:border-white shadow-xl">
         } @else if (previewArtifact()?.type === 'log') {
-          <div class="w-full max-h-[70vh] overflow-auto p-6 bg-gray-950 text-gray-100 font-mono text-xs whitespace-pre-wrap selection:bg-white selection:text-black border-2 border-black">
+          <div class="w-full max-h-[70vh] overflow-auto p-6 bg-gray-950 text-gray-100 font-mono text-xs whitespace-pre-wrap selection:bg-white selection:text-black border border-black">
             @if (previewContent()) {
               {{ previewContent() }}
             } @else {
-              <div class="flex justify-center py-10">
-                <span class="animate-pulse font-black font-mono">FETCHING_BUFFER...</span>
+              <div class="flex justify-center py-12">
+                <span class="animate-pulse font-bold">Fetching Buffer...</span>
               </div>
             }
           </div>
         } @else {
           <div class="py-20 text-center space-y-6">
             <svg class="h-20 w-20 mx-auto text-gray-200 dark:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px] font-mono">FILE_TYPE_UNSUPPORTED</p>
-            <app-button class="font-black" (onClick)="downloadArtifact(previewArtifact())">DOWNLOAD_ARCHIVE</app-button>
+            <p class="text-gray-400 font-bold uppercase tracking-widest text-[11px]">File type unsupported</p>
+            <app-button class="font-bold" (onClick)="downloadArtifact(previewArtifact())">Download Archive</app-button>
           </div>
         }
       </div>
       <div footer>
         <div class="flex justify-between items-center w-full">
-          <div class="text-[9px] font-black uppercase text-gray-400 font-mono">
+          <div class="text-[10px] font-bold uppercase text-gray-400">
             REF:{{ previewArtifact()?.id }}
           </div>
-          <app-button variant="secondary" class="font-black" (onClick)="isPreviewModalOpen.set(false)">DISMISS</app-button>
+          <app-button variant="secondary" class="font-bold" (onClick)="isPreviewModalOpen.set(false)">Dismiss</app-button>
         </div>
       </div>
     </app-modal>
@@ -634,7 +660,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     switch (cat) {
       case 'issue': return 'bg-black text-white dark:bg-white dark:text-black';
       case 'finding': return 'bg-gray-400 text-white dark:bg-gray-600 dark:text-black';
-      default: return 'bg-gray-200 text-black dark:bg-gray-800 dark:text-white border-2 border-black dark:border-white';
+      default: return 'bg-gray-200 text-black dark:bg-gray-800 dark:text-white border border-black dark:border-white';
     }
   }
 }

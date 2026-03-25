@@ -19,36 +19,36 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
   ],
   template: `
     <div class="space-y-8">
-      <div class="flex flex-col sm:flex-row justify-between items-end gap-6 border-b-4 border-black dark:border-white pb-6">
+      <div class="flex flex-col sm:flex-row justify-between items-end gap-6 border-b-2 border-black dark:border-white pb-6">
         <div>
           <h2 class="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Session Archive</h2>
-          <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mt-1">Exploratory Testing Manifest</p>
+          <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mt-1">Exploratory Testing Manifest</p>
         </div>
         <div class="flex w-full sm:w-auto space-x-4">
            <app-input 
-            placeholder="FILTER BY TITLE OR MACHINE..." 
+            placeholder="Filter by title or machine..." 
             [value]="searchQuery()"
             (valueChange)="onSearch($event)"
             class="w-full sm:w-80 mb-0"
           />
-          <app-button (onClick)="openCreateModal()">+ NEW ENTRY</app-button>
+          <app-button (onClick)="openCreateModal()">+ New Entry</app-button>
         </div>
       </div>
 
-      <div class="overflow-x-auto e-ink-shadow">
-        <table class="w-full border-collapse bg-white dark:bg-gray-900 border-2 border-black dark:border-white text-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse bg-white dark:bg-gray-900 border border-black dark:border-white text-sm">
           <thead>
             <tr class="bg-black text-white dark:bg-white dark:text-black">
-              <th (click)="toggleSort('title')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+              <th (click)="toggleSort('title')" class="group cursor-pointer px-4 py-3 text-left text-xs font-bold uppercase tracking-wider border-r border-white/20 dark:border-black/20 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-between">
-                  <span>Session Title / Mission</span>
+                  <span>Session Title / Goal</span>
                   <span class="ml-2 font-mono">
                     @if (sortBy() === 'title') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
                     @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
                   </span>
                 </div>
               </th>
-              <th (click)="toggleSort('machine_name')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+              <th (click)="toggleSort('machine_name')" class="group cursor-pointer px-4 py-3 text-left text-xs font-bold uppercase tracking-wider border-r border-white/20 dark:border-black/20 hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-between">
                   <span>Machine</span>
                   <span class="ml-2 font-mono">
@@ -57,7 +57,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                   </span>
                 </div>
               </th>
-              <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-3 text-left text-xs font-black uppercase tracking-widest border-r border-white/20 dark:border-black/20 hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+              <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-3 text-left text-xs font-bold uppercase tracking-wider border-r border-white/20 dark:border-black/20 hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-between">
                   <span>Created</span>
                   <span class="ml-2 font-mono">
@@ -66,7 +66,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                   </span>
                 </div>
               </th>
-              <th (click)="toggleSort('status')" class="group cursor-pointer px-4 py-3 text-right text-xs font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+              <th (click)="toggleSort('status')" class="group cursor-pointer px-4 py-3 text-right text-xs font-bold uppercase tracking-wider hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
                 <div class="flex items-center justify-end">
                   <span>Status</span>
                   <span class="ml-2 font-mono">
@@ -77,30 +77,30 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y-2 divide-black dark:divide-white">
+          <tbody class="divide-y divide-black/10 dark:divide-white/10">
             @for (session of sessions(); track session.id) {
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-                <td class="px-4 py-4 border-r-2 border-black dark:border-white">
+                <td class="px-4 py-4 border-r border-black/10 dark:border-white/10">
                   <div class="flex flex-col">
-                    <span class="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:underline decoration-2 cursor-pointer" [routerLink]="['/sessions', session.id]">
+                    <span class="text-base font-bold text-gray-900 dark:text-white group-hover:underline decoration-2 cursor-pointer" [routerLink]="['/sessions', session.id]">
                       {{ session.title }}
                     </span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1 font-medium">{{ session.mission }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1 font-medium">{{ session.charter }}</span>
                   </div>
                 </td>
-                <td class="px-4 py-4 whitespace-nowrap border-r-2 border-black dark:border-white hidden md:table-cell">
-                  <span class="text-xs font-black font-mono text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1">
+                <td class="px-4 py-4 whitespace-nowrap border-r border-black/10 dark:border-white/10 hidden md:table-cell">
+                  <span class="text-[10px] font-bold font-mono text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1">
                     {{ session.machine_name || '---' }}
                   </span>
                 </td>
-                <td class="px-4 py-4 whitespace-nowrap hidden sm:table-cell border-r-2 border-black dark:border-white">
+                <td class="px-4 py-4 whitespace-nowrap hidden sm:table-cell border-r border-black/10 dark:border-white/10">
                   <div class="flex flex-col">
-                    <span class="text-xs font-black font-mono text-gray-900 dark:text-white uppercase">{{ session.created_at | date:'MMM dd, yyyy' }}</span>
-                    <span class="text-[10px] font-black font-mono text-gray-500 dark:text-gray-400 mt-0.5">{{ session.created_at | date:'shortTime' }}</span>
+                    <span class="text-xs font-bold font-mono text-gray-900 dark:text-white">{{ session.created_at | date:'MMM dd, yyyy' }}</span>
+                    <span class="text-[10px] font-medium font-mono text-gray-400 dark:text-gray-500 mt-0.5">{{ session.created_at | date:'shortTime' }}</span>
                   </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-right">
-                  <span [class]="'px-2 py-1 text-[10px] font-black uppercase tracking-tighter border-2 inline-block ' + statusClasses(session.status)">
+                  <span [class]="'px-2 py-1 text-[10px] font-bold uppercase tracking-tight border inline-block ' + statusClasses(session.status)">
                     {{ session.status }}
                   </span>
                 </td>
@@ -109,8 +109,25 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
  @empty {
               @if (!isLoading()) {
                 <tr>
-                  <td colspan="5" class="px-4 py-20 text-center">
-                    <p class="text-lg font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest italic">No matching records found in manifest</p>
+                  <td colspan="5" class="px-4 py-32 text-center bg-gray-50/50 dark:bg-gray-800/20">
+                    <div class="max-w-md mx-auto space-y-6">
+                      <div class="flex justify-center">
+                        <div class="p-4 bg-white dark:bg-gray-900 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                          <svg class="w-12 h-12 text-black dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div class="space-y-2">
+                        <h3 class="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white">Your Manifest is Empty</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                          Sessions are the heartbeat of exploratory testing. Create your first entry to define your goal and start capturing real-time evidence.
+                        </p>
+                      </div>
+                      <div class="flex justify-center">
+                        <app-button (onClick)="openCreateModal()">+ Create Your First Session</app-button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               }
@@ -134,25 +151,23 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
       >
         <div class="space-y-4">
           <app-input 
-            label="Title" 
+            label="Session Title" 
             placeholder="e.g. Navigation Menu Audit" 
             [value]="newSession().title"
             (valueChange)="updateNewSession('title', $event)"
           />
-          <app-input 
-            label="Charter (What to test, Scope & Approach)" 
-            type="textarea"
-            placeholder="Define the scope, risks, and approach..." 
-            [value]="newSession().charter"
-            (valueChange)="updateNewSession('charter', $event)"
-          />
-          <app-input 
-            label="Mission (Specific Goal/Target)" 
-            type="textarea"
-            placeholder="Define the specific goal or purpose of this session..." 
-            [value]="newSession().mission"
-            (valueChange)="updateNewSession('mission', $event)"
-          />
+          <div class="space-y-1">
+            <app-input 
+              label="Goal & Approach" 
+              type="textarea"
+              placeholder="What are you testing and how?" 
+              [value]="newSession().charter"
+              (valueChange)="updateNewSession('charter', $event)"
+            />
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 italic px-1 leading-tight">
+              Define the specific goal of this session and the approach you will take (tools, data, boundaries).
+            </p>
+          </div>
           <div class="grid grid-cols-2 gap-4">
             <app-input 
               label="Machine Name (Optional)" 
@@ -181,7 +196,7 @@ export class SessionListComponent implements OnInit {
   
   sessions = signal<any[]>([]);
   isModalOpen = signal(false);
-  newSession = signal({ title: '', mission: '', charter: '', machine_name: '', duration_minutes: 60 });
+  newSession = signal({ title: '', mission: '-', charter: '', machine_name: '', duration_minutes: 60 });
   searchQuery = signal('');
   
   // Pagination & Sort state
@@ -252,7 +267,7 @@ export class SessionListComponent implements OnInit {
   }
 
   openCreateModal() {
-    this.newSession.set({ title: '', mission: '', charter: '', machine_name: '', duration_minutes: 60 });
+    this.newSession.set({ title: '', mission: '-', charter: '', machine_name: '', duration_minutes: 60 });
     this.isModalOpen.set(true);
   }
 
@@ -265,7 +280,7 @@ export class SessionListComponent implements OnInit {
 
   isValid() {
     const s = this.newSession();
-    return s.title && s.mission && s.charter;
+    return s.title && s.charter;
   }
 
   createSession() {
