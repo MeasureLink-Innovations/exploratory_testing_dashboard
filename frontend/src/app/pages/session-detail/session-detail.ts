@@ -14,56 +14,107 @@ import { ModalComponent } from '../../components/modal/modal';
   template: `
     <div class="flex flex-col h-screen max-w-[1600px] mx-auto overflow-hidden px-2 sm:px-6">
     @if (session()) {
-      <!-- 1. HEADER AREA -->
-      <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white pb-3 pt-3 relative z-[100]">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
-          <div class="space-y-1 w-full md:w-auto">
-            <nav class="flex" aria-label="Breadcrumb">
-              <ol class="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                <li><a routerLink="/sessions" class="hover:underline font-mono">Manifest</a></li>
-                <li>/</li>
-                <li class="text-black dark:text-white font-mono">ID:{{ session()?.id }}</li>
-              </ol>
-            </nav>
-            <h2 class="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words">
+      <!-- 1. MISSION CONTROL HEADER (OMNIPRESENT) -->
+      <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white pb-4 pt-3 relative z-[100] space-y-4">
+        
+        <!-- Row 1: Identity & Meta -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div class="flex items-center gap-3">
+            <a routerLink="/sessions" class="flex items-center gap-1.5 px-2 py-1 border border-black/10 hover:bg-black/5 transition-colors text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2 group">
+              <svg class="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              Manifest
+            </a>
+            <div class="bg-black text-white dark:bg-white dark:text-black px-2 py-1 font-mono text-lg font-black tracking-tighter shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
+              SESS_{{ session()?.id }}
+            </div>
+            <h2 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words">
               {{ session()?.title }}
             </h2>
           </div>
           
-          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
             @if (session()?.status === 'in-progress') {
-              <div class="flex items-center px-3 py-1 bg-black text-white dark:bg-white dark:text-black font-mono text-xs border border-black dark:border-white">
-                <span class="mr-1.5 opacity-50">T-</span>{{ timeRemaining() }}
+              <div class="flex items-center px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black font-mono text-sm border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]">
+                <span class="mr-2 opacity-50">EXEC_TIME:</span>{{ timeRemaining() }}
               </div>
-            } @else if (session()?.status === 'completed') {
-              <div class="flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold border border-gray-200 dark:border-gray-700 uppercase tracking-widest">
-                Archived
+            } @else {
+              <div class="px-3 py-1 border border-black/20 text-[10px] font-black uppercase tracking-widest text-gray-400 font-mono">
+                STATUS:{{ session()?.status }}
               </div>
             }
             
-            <div class="flex flex-grow md:flex-grow-0 bg-white dark:bg-gray-900 border border-black dark:border-white p-0.5 justify-center">
+            <div class="flex bg-white dark:bg-gray-900 border border-black dark:border-white p-0.5">
               @if (session()?.status === 'planned') {
-                <app-button size="sm" class="w-full md:w-auto font-bold" (onClick)="openStartModal()">Begin Session</app-button>
+                <app-button size="sm" class="font-bold" (onClick)="openStartModal()">Begin Session</app-button>
               } @else if (session()?.status === 'in-progress') {
-                <app-button variant="danger" size="sm" class="w-full md:w-auto font-bold" (onClick)="moveToDebriefing()">End Logging</app-button>
+                <app-button variant="danger" size="sm" class="font-bold" (onClick)="moveToDebriefing()">End Logging</app-button>
               } @else if (session()?.status === 'debriefing') {
-                <app-button size="sm" class="w-full md:w-auto bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-bold" (onClick)="completeSession()">Finalize Manifest</app-button>
+                <app-button size="sm" class="font-bold" (onClick)="completeSession()">Finalize Manifest</app-button>
               }
             </div>
           </div>
         </div>
 
-        <!-- 2. PERSISTENT BRIEF -->
-        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 border border-black dark:border-white grid grid-cols-1 md:grid-cols-2 gap-4 relative z-[90]">
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">[Charter Scope]</span>
-            <h3 class="text-xs sm:text-sm font-bold text-black dark:text-white line-clamp-2 border-l-2 border-black/10 pl-3 leading-relaxed">{{ session()?.charter }}</h3>
+        <!-- Row 2: Objective & Mission (Omnipresent) -->
+        <div class="flex flex-col md:flex-row gap-4 py-2 px-3 bg-gray-50 dark:bg-gray-800/30 border border-black/5">
+          <div class="flex-1">
+            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-0.5">Primary Charter</span>
+            <p class="text-xs font-bold text-black dark:text-white leading-tight line-clamp-1 border-l-2 border-black/20 pl-2">
+              {{ session()?.charter }}
+            </p>
           </div>
-          <div class="md:border-l md:pl-6 border-black/10">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">[Operational Mission]</span>
-            <p class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 italic line-clamp-2 border-l-2 border-black/10 pl-3 leading-relaxed">"{{ session()?.mission }}"</p>
+          <div class="flex-1 md:border-l md:pl-4 border-black/10">
+            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-0.5">Operational Mission</span>
+            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 italic leading-tight line-clamp-1 border-l-2 border-black/20 pl-2">
+              "{{ session()?.mission }}"
+            </p>
+          </div>
+          <div class="hidden md:flex flex-col items-end justify-center min-w-[120px]">
+             <span class="text-[9px] font-black text-gray-400 uppercase">Unit:{{ session()?.machine_name || 'N/A' }}</span>
+             <span class="text-[9px] font-bold text-gray-400 font-mono">{{ session()?.created_at | date:'yyyy-MM-dd' }}</span>
           </div>
         </div>
+
+        <!-- Row 3: Omnipresent Observation Capture -->
+        @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
+          <div class="pt-2 border-t border-black/5">
+            <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-end">
+              <div class="flex-grow">
+                <div class="flex justify-between items-center mb-1">
+                   <label class="text-[10px] font-black uppercase tracking-widest text-black/40">Observation Capture</label>
+                   @if (selectedArtifacts().length > 0) {
+                      <div class="flex gap-1">
+                        @for (art of selectedArtifacts(); track art.id) {
+                          <span class="bg-black text-white text-[8px] px-1.5 py-0.5 flex items-center font-bold">
+                            {{ art.name }}
+                            <button (click)="unselectArtifact(art.id)" class="ml-1 opacity-50 hover:opacity-100">×</button>
+                          </span>
+                        }
+                      </div>
+                   }
+                </div>
+                <app-input 
+                  type="textarea" 
+                  placeholder="What are you seeing? Record notes, findings, or issues in real-time..." 
+                  [value]="logEntry()"
+                  (valueChange)="logEntry.set($event)"
+                  class="text-sm font-bold !mb-0"
+                />
+              </div>
+              
+              <div class="flex lg:flex-col gap-2 min-w-[160px]">
+                <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-9 flex-grow">
+                  <button (click)="logCategory.set('note')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Note</button>
+                  <button (click)="logCategory.set('finding')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Find</button>
+                  <button (click)="logCategory.set('issue')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Issue</button>
+                </div>
+                <app-button class="font-black uppercase text-[10px] h-9" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">
+                  Commit Observation
+                </app-button>
+              </div>
+            </div>
+          </div>
+        }
       </div>
 
       <!-- 3. MAIN WORK AREA -->
@@ -187,59 +238,8 @@ import { ModalComponent } from '../../components/modal/modal';
             </app-card>
           </div>
 
-          <!-- TOOLBELT COLUMN -->
-          <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 space-y-6">
-            
-            <div class="flex-shrink-0">
-              <div class="flex items-center space-x-3">
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">[Execution Zone]</span>
-                <div class="flex-grow border-t border-black/10 dark:border-white/10"></div>
-              </div>
-            </div>
-
-            <div class="flex-shrink-0">
-              @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
-                <app-card title="Observation Capture" class="border-2 border-black dark:border-white">
-                  <div class="space-y-3 p-0.5">
-                    <app-input 
-                      type="textarea" 
-                      placeholder="Record observation..." 
-                      [value]="logEntry()"
-                      (valueChange)="logEntry.set($event)"
-                      class="text-base font-bold"
-                    />
-                    
-                    @if (selectedArtifacts().length > 0) {
-                      <div class="flex flex-wrap gap-1.5 pb-1">
-                        @for (art of selectedArtifacts(); track art.id) {
-                          <span class="inline-flex items-center px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-bold border border-white/20">
-                            {{ art.name }}
-                            <button (click)="unselectArtifact(art.id)" class="ml-1.5 opacity-60 hover:opacity-100">×</button>
-                          </span>
-                        }
-                      </div>
-                    }
-
-                    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                      <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-9">
-                        <button (click)="logCategory.set('note')" [class]="'px-4 text-[10px] font-bold uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Note</button>
-                        <button (click)="logCategory.set('finding')" [class]="'px-4 text-[10px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Finding</button>
-                        <button (click)="logCategory.set('issue')" [class]="'px-4 text-[10px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : '')">Issue</button>
-                      </div>
-                      <app-button size="sm" class="bg-[#F97316] hover:bg-[#EA580C] border-[#EA580C] text-white font-bold" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">Commit Entry</app-button>
-                    </div>
-                  </div>
-                </app-card>
-              } @else if (session()?.status === 'planned') {
-                <div class="h-full flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/10">
-                   <div class="text-center space-y-4 max-w-sm">
-                     <p class="text-sm font-bold text-gray-400 uppercase tracking-widest italic">Waiting for unit designation...</p>
-                     <p class="text-xs text-gray-500 leading-relaxed">The observation capture and artifact pool will unlock once you begin the session.</p>
-                   </div>
-                </div>
-              }
-            </div>
-
+          <!-- TOOLBELT COLUMN (Artifacts & Evidence) -->
+          <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30">
             <div class="flex-grow overflow-hidden flex flex-col min-h-0">
               <app-card title="Artifact Evidence Pool" class="h-full">
                 <div class="flex flex-col h-full space-y-4">
