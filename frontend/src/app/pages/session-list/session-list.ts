@@ -26,7 +26,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
         </div>
         <div class="flex w-full sm:w-auto space-x-4">
            <app-input 
-            placeholder="Filter by title or machine..." 
+            placeholder="Filter by title, machine or version..." 
             [value]="searchQuery()"
             (valueChange)="onSearch($event)"
             class="w-full sm:w-80 mb-0"
@@ -44,6 +44,15 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                   <span>Session Title / Goal</span>
                   <span class="ml-2 font-mono">
                     @if (sortBy() === 'title') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                    @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
+                  </span>
+                </div>
+              </th>
+              <th (click)="toggleSort('software_version')" class="group cursor-pointer px-4 py-3 text-left text-xs font-bold uppercase tracking-wider border-r border-white/20 dark:border-black/20 hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span>Version</span>
+                  <span class="ml-2 font-mono">
+                    @if (sortBy() === 'software_version') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
                     @else { <span class="opacity-0 group-hover:opacity-50 font-mono">↓</span> }
                   </span>
                 </div>
@@ -87,6 +96,11 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                     </span>
                     <span class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1 font-medium">{{ session.charter }}</span>
                   </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap border-r border-black/10 dark:border-white/10 hidden md:table-cell">
+                  <span class="text-[10px] font-bold font-mono text-gray-600 dark:text-gray-400 bg-black/5 dark:bg-white/5 px-2 py-1">
+                    {{ session.software_version || '---' }}
+                  </span>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap border-r border-black/10 dark:border-white/10 hidden md:table-cell">
                   <span class="text-[10px] font-bold font-mono text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1">
@@ -176,12 +190,18 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
               (valueChange)="updateNewSession('machine_name', $event)"
             />
             <app-input 
-              label="Timebox (Minutes)" 
-              type="number"
-              [value]="newSession().duration_minutes.toString()"
-              (valueChange)="updateNewSession('duration_minutes', $event)"
+              label="SW Version (Optional)" 
+              placeholder="e.g. v1.2.3" 
+              [value]="newSession().software_version"
+              (valueChange)="updateNewSession('software_version', $event)"
             />
           </div>
+          <app-input 
+            label="Timebox (Minutes)" 
+            type="number"
+            [value]="newSession().duration_minutes.toString()"
+            (valueChange)="updateNewSession('duration_minutes', $event)"
+          />
         </div>
         <div footer>
           <app-button variant="secondary" (onClick)="isModalOpen.set(false)">Cancel</app-button>
@@ -196,7 +216,7 @@ export class SessionListComponent implements OnInit {
   
   sessions = signal<any[]>([]);
   isModalOpen = signal(false);
-  newSession = signal({ title: '', mission: '-', charter: '', machine_name: '', duration_minutes: 60 });
+  newSession = signal({ title: '', mission: '-', charter: '', machine_name: '', software_version: '', duration_minutes: 60 });
   searchQuery = signal('');
   
   // Pagination & Sort state
@@ -267,7 +287,7 @@ export class SessionListComponent implements OnInit {
   }
 
   openCreateModal() {
-    this.newSession.set({ title: '', mission: '-', charter: '', machine_name: '', duration_minutes: 60 });
+    this.newSession.set({ title: '', mission: '-', charter: '', machine_name: '', software_version: '', duration_minutes: 60 });
     this.isModalOpen.set(true);
   }
 
