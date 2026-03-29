@@ -55,23 +55,23 @@ import { ModalComponent } from '../../components/modal/modal';
           </div>
         </div>
 
-        <!-- Row 2: Objective & Mission (Omnipresent) -->
-        <div class="flex flex-col md:flex-row gap-4 py-2 px-3 bg-gray-50 dark:bg-gray-800/30 border border-black/5">
-          <div class="flex-1">
-            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-0.5">Primary Charter</span>
-            <p class="text-xs font-bold text-black dark:text-white leading-tight line-clamp-1 border-l-2 border-black/20 pl-2">
+        <!-- Row 2: Primary Charter (High Visibility) -->
+        <div class="flex flex-col md:flex-row gap-4 py-3 px-4 bg-gray-50 dark:bg-gray-800/30 border-x-2 border-y border-black dark:border-white shadow-[inset_4px_0px_0px_0px_rgba(0,0,0,0.1)]">
+          <div class="flex-grow">
+            <span class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 block mb-1">Primary Charter Protocol</span>
+            <h3 class="text-lg md:text-xl font-black text-black dark:text-white leading-tight border-l-4 border-black dark:border-white pl-4 py-1">
               {{ session()?.charter }}
-            </p>
+            </h3>
           </div>
-          <div class="flex-1 md:border-l md:pl-4 border-black/10">
-            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-0.5">Operational Mission</span>
-            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 italic leading-tight line-clamp-1 border-l-2 border-black/20 pl-2">
-              "{{ session()?.mission }}"
-            </p>
-          </div>
-          <div class="hidden md:flex flex-col items-end justify-center min-w-[120px]">
-             <span class="text-[9px] font-black text-gray-400 uppercase">Unit:{{ session()?.machine_name || 'N/A' }}</span>
-             <span class="text-[9px] font-bold text-gray-400 font-mono">{{ session()?.created_at | date:'yyyy-MM-dd' }}</span>
+          <div class="flex flex-row md:flex-col items-start md:items-end justify-between md:justify-center gap-2 md:min-w-[140px] border-t md:border-t-0 md:border-l border-black/10 pt-2 md:pt-0 md:pl-4">
+             <div class="flex flex-col items-start md:items-end">
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Target_Unit</span>
+               <span class="text-[11px] font-bold text-black dark:text-white font-mono uppercase bg-black/5 dark:bg-white/5 px-1.5">{{ session()?.machine_name || 'UNDEFINED' }}</span>
+             </div>
+             <div class="flex flex-col items-start md:items-end">
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Deployment_Date</span>
+               <span class="text-[11px] font-bold text-gray-400 font-mono">{{ session()?.created_at | date:'yyyy-MM-dd' }}</span>
+             </div>
           </div>
         </div>
 

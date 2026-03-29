@@ -8,7 +8,7 @@ router.get('/', async (req, res, next) => {
     const { search, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC' } = req.query;
     
     // Whitelist for allowed sorting columns
-    const allowedColumns = ['title', 'status', 'machine_name', 'created_at', 'duration_minutes'];
+    const allowedColumns = ['title', 'status', 'machine_name', 'software_version', 'created_at', 'duration_minutes'];
     const safeSortBy = allowedColumns.includes(sortBy) ? sortBy : 'created_at';
     const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
@@ -16,7 +16,7 @@ router.get('/', async (req, res, next) => {
     const params = [];
 
     if (search) {
-      query += ' WHERE title ILIKE $1 OR machine_name ILIKE $1';
+      query += ' WHERE title ILIKE $1 OR machine_name ILIKE $1 OR software_version ILIKE $1';
       params.push(`%${search}%`);
       query += ` ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $2 OFFSET $3`;
       params.push(parseInt(limit), parseInt(offset));
@@ -89,10 +89,10 @@ router.get('/:id', async (req, res, next) => {
 // Create session
 router.post('/', async (req, res, next) => {
   try {
-    const { title, mission, charter, machine_name, duration_minutes } = req.body;
+    const { title, mission, charter, machine_name, software_version, duration_minutes } = req.body;
     const result = await db.query(
-      'INSERT INTO sessions (title, mission, charter, machine_name, duration_minutes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [title, mission, charter, machine_name, duration_minutes || 60]
+      'INSERT INTO sessions (title, mission, charter, machine_name, software_version, duration_minutes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [title, mission, charter, machine_name, software_version, duration_minutes || 60]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -104,7 +104,7 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, machine_name, title, mission, charter, start_time, end_time, duration_minutes, debrief_summary } = req.body;
+    const { status, machine_name, software_version, title, mission, charter, start_time, end_time, duration_minutes, debrief_summary } = req.body;
     
     // Fetch current session to check status
     const currentResult = await db.query('SELECT * FROM sessions WHERE id = $1', [id]);
@@ -144,6 +144,7 @@ router.put('/:id', async (req, res, next) => {
     }
 
     if (machine_name) { fields.push(`machine_name = $${idx++}`); values.push(machine_name); }
+    if (software_version) { fields.push(`software_version = $${idx++}`); values.push(software_version); }
     if (title) { fields.push(`title = $${idx++}`); values.push(title); }
     if (mission) { fields.push(`mission = $${idx++}`); values.push(mission); }
     if (charter) { fields.push(`charter = $${idx++}`); values.push(charter); }
