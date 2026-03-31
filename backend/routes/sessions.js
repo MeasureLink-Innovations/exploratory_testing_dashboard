@@ -143,15 +143,15 @@ router.put('/:id', async (req, res, next) => {
       }
     }
 
-    if (machine_name) { fields.push(`machine_name = $${idx++}`); values.push(machine_name); }
-    if (software_version) { fields.push(`software_version = $${idx++}`); values.push(software_version); }
-    if (title) { fields.push(`title = $${idx++}`); values.push(title); }
-    if (mission) { fields.push(`mission = $${idx++}`); values.push(mission); }
-    if (charter) { fields.push(`charter = $${idx++}`); values.push(charter); }
-    if (start_time) { fields.push(`start_time = $${idx++}`); values.push(start_time); }
-    if (end_time) { fields.push(`end_time = $${idx++}`); values.push(end_time); }
-    if (duration_minutes) { fields.push(`duration_minutes = $${idx++}`); values.push(duration_minutes); }
-    if (debrief_summary) { fields.push(`debrief_summary = $${idx++}`); values.push(debrief_summary); }
+    if (machine_name !== undefined) { fields.push(`machine_name = $${idx++}`); values.push(machine_name); }
+    if (software_version !== undefined) { fields.push(`software_version = $${idx++}`); values.push(software_version); }
+    if (title !== undefined) { fields.push(`title = $${idx++}`); values.push(title); }
+    if (mission !== undefined) { fields.push(`mission = $${idx++}`); values.push(mission); }
+    if (charter !== undefined) { fields.push(`charter = $${idx++}`); values.push(charter); }
+    if (start_time !== undefined) { fields.push(`start_time = $${idx++}`); values.push(start_time); }
+    if (end_time !== undefined) { fields.push(`end_time = $${idx++}`); values.push(end_time); }
+    if (duration_minutes !== undefined) { fields.push(`duration_minutes = $${idx++}`); values.push(duration_minutes); }
+    if (debrief_summary !== undefined) { fields.push(`debrief_summary = $${idx++}`); values.push(debrief_summary); }
     
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
