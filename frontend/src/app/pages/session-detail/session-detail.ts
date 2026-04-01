@@ -45,7 +45,7 @@ import { ModalComponent } from '../../components/modal/modal';
             
             <div class="flex bg-white dark:bg-gray-900 border border-black dark:border-white p-0.5">
               @if (session()?.status === 'planned') {
-                <app-button size="sm" class="font-bold" (onClick)="openStartModal()">Begin Session</app-button>
+                <app-button size="sm" class="font-bold" (onClick)="openMetaModal()">Begin Session</app-button>
               } @else if (session()?.status === 'in-progress') {
                 <app-button variant="danger" size="sm" class="font-bold" (onClick)="moveToDebriefing()">End Logging</app-button>
               } @else if (session()?.status === 'debriefing') {
@@ -69,9 +69,16 @@ import { ModalComponent } from '../../components/modal/modal';
                <span class="text-[11px] font-bold text-black dark:text-white font-mono uppercase bg-black/5 dark:bg-white/5 px-1.5">{{ session()?.machine_name || 'UNDEFINED' }}</span>
              </div>
              <div class="flex flex-col items-start md:items-end">
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">SW_Version</span>
+               <span class="text-[11px] font-bold text-black dark:text-white font-mono uppercase bg-black/5 dark:bg-white/5 px-1.5">{{ session()?.software_version || 'UNDEFINED' }}</span>
+             </div>
+             <div class="flex flex-col items-start md:items-end">
                <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Deployment_Date</span>
                <span class="text-[11px] font-bold text-gray-400 font-mono">{{ session()?.created_at | date:'yyyy-MM-dd' }}</span>
              </div>
+             @if (session()?.status !== 'completed') {
+               <button (click)="openMetaModal()" class="text-[9px] font-black text-blue-500 hover:underline uppercase mt-1">Edit Meta</button>
+             }
           </div>
         </div>
 
@@ -139,7 +146,7 @@ import { ModalComponent } from '../../components/modal/modal';
                         This session is in the **Planned** state. To begin your exploratory audit, you must first designate the unit (machine or environment) under test.
                       </p>
                       <div class="pt-2">
-                        <app-button variant="secondary" size="sm" class="font-bold !bg-white !text-black border-black" (onClick)="openStartModal()">Execute Start Protocol</app-button>
+                        <app-button variant="secondary" size="sm" class="font-bold !bg-white !text-black border-black" (onClick)="openMetaModal()">Execute Start Protocol</app-button>
                       </div>
                     </div>
                   </div>
@@ -295,20 +302,30 @@ import { ModalComponent } from '../../components/modal/modal';
       </div>
     }
 
-    <!-- Start Session Modal -->
-    <app-modal [isOpen]="isStartModalOpen()" title="Start Session" (close)="isStartModalOpen.set(false)">
+    <!-- Metadata Modal -->
+    <app-modal [isOpen]="isMetaModalOpen()" [title]="session()?.status === 'planned' ? 'Start Session' : 'Edit Metadata'" (close)="isMetaModalOpen.set(false)">
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">Confirm Unit Designation before execution.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          {{ session()?.status === 'planned' ? 'Confirm execution details before starting.' : 'Update deployment metadata.' }}
+        </p>
         <app-input 
-          label="Unit Designation" 
+          label="Unit Designation (Machine)" 
           placeholder="e.g. Test-VM-01" 
           [value]="machineName()"
           (valueChange)="machineName.set($event)"
         />
+        <app-input 
+          label="Software Version" 
+          placeholder="e.g. v1.2.3" 
+          [value]="softwareVersion()"
+          (valueChange)="softwareVersion.set($event)"
+        />
       </div>
       <div footer>
-        <app-button variant="secondary" class="font-bold" (onClick)="isStartModalOpen.set(false)">Abort</app-button>
-        <app-button [disabled]="!machineName()" class="font-bold" (onClick)="startSession()">Execute Start</app-button>
+        <app-button variant="secondary" class="font-bold" (onClick)="isMetaModalOpen.set(false)">Abort</app-button>
+        <app-button [disabled]="!machineName()" class="font-bold" (onClick)="saveMetadata()">
+          {{ session()?.status === 'planned' ? 'Execute Start' : 'Save Changes' }}
+        </app-button>
       </div>
     </app-modal>
 
@@ -392,9 +409,10 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   isLoadingLogs = signal(false);
   
   // Modals
-  isStartModalOpen = signal(false);
+  isMetaModalOpen = signal(false);
   isArtifactModalOpen = signal(false);
   machineName = signal('');
+  softwareVersion = signal('');
   
   isLinkModalOpen = signal(false);
   activeLogToLink = signal<any>(null);
@@ -494,6 +512,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
       this.debriefSummary.set(session.debrief_summary || '');
       this.hasMoreLogs.set(false); 
       if (session.machine_name) this.machineName.set(session.machine_name);
+      if (session.software_version) this.softwareVersion.set(session.software_version);
     });
   }
 
@@ -515,17 +534,25 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  openStartModal() {
-    this.isStartModalOpen.set(true);
+  openMetaModal() {
+    this.machineName.set(this.session().machine_name || '');
+    this.softwareVersion.set(this.session().software_version || '');
+    this.isMetaModalOpen.set(true);
   }
 
-  startSession() {
+  saveMetadata() {
     const id = this.session().id;
-    this.api.updateSession(id, { 
-      status: 'in-progress', 
-      machine_name: this.machineName()
-    }).subscribe(updated => {
-      this.isStartModalOpen.set(false);
+    const update: any = { 
+      machine_name: this.machineName(),
+      software_version: this.softwareVersion()
+    };
+    
+    if (this.session().status === 'planned') {
+      update.status = 'in-progress';
+    }
+
+    this.api.updateSession(id, update).subscribe(updated => {
+      this.isMetaModalOpen.set(false);
       this.session.update(s => ({ ...s, ...updated }));
     });
   }
