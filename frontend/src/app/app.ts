@@ -8,8 +8,8 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [RouterOutlet, CommonModule],
   template: `
-    <div class="min-h-screen paper-bg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
-      <header class="bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="h-screen paper-bg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 flex flex-col overflow-hidden">
+      <header class="bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white px-6 py-3 flex items-center justify-between flex-shrink-0 relative z-50">
         <div class="flex items-center gap-4">
           <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tighter leading-none">
             Exploratory Dashboard
@@ -34,7 +34,7 @@ import { CommonModule } from '@angular/common';
         </div>
       </header>
       
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <main class="flex-grow relative z-10 overflow-hidden flex flex-col">
         <router-outlet />
       </main>
     </div>

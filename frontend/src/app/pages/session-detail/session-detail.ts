@@ -12,7 +12,7 @@ import { ModalComponent } from '../../components/modal/modal';
   standalone: true,
   imports: [CommonModule, RouterLink, ButtonComponent, CardComponent, InputComponent, ModalComponent],
   template: `
-    <div class="flex flex-col h-screen max-w-[1600px] mx-auto overflow-hidden px-2 sm:px-6 animate-in fade-in duration-700 ease-out">
+    <div class="flex flex-col h-full max-w-[1600px] mx-auto overflow-hidden px-2 sm:px-6 animate-in fade-in duration-700 ease-out">
     @if (session()) {
       <!-- 1. MISSION CONTROL HEADER (OMNIPRESENT) -->
       <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white pb-4 pt-3 relative z-[100] space-y-4">
