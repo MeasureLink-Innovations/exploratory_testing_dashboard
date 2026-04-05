@@ -26,7 +26,7 @@ export class ApiService {
   private apiUrl = 'http://localhost:3000/api';
 
   // Sessions
-  getSessions(search?: string, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC'): Observable<SessionsResponse> {
+  getSessions(search?: string, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC', versionFilter?: string): Observable<SessionsResponse> {
     let params = new HttpParams()
       .set('limit', limit.toString())
       .set('offset', offset.toString())
@@ -36,7 +36,14 @@ export class ApiService {
     if (search) {
       params = params.set('search', search);
     }
+    if (versionFilter) {
+      params = params.set('versionFilter', versionFilter);
+    }
     return this.http.get<SessionsResponse>(`${this.apiUrl}/sessions`, { params });
+  }
+
+  getVersions(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/sessions/versions`);
   }
 
   getSession(id: number): Observable<any> {
