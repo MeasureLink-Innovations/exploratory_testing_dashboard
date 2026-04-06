@@ -18,8 +18,8 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
     InputComponent
   ],
   template: `
-    <div class="space-y-8 animate-in fade-in duration-700 ease-out">
-      <div class="flex flex-col lg:flex-row justify-between items-end gap-6 border-b-2 border-black dark:border-white pb-6">
+    <div class="h-full flex flex-col overflow-hidden px-2 sm:px-6 py-6 animate-in fade-in duration-700 ease-out">
+      <div class="flex-shrink-0 flex flex-col lg:flex-row justify-between items-end gap-6 border-b-2 border-black dark:border-white pb-6 mb-8">
         <div class="flex-grow">
           <h2 class="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Session Archive</h2>
           <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">Exploratory Testing Manifest</p>
@@ -51,126 +51,128 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
         </div>
       </div>
 
-      <div class="overflow-x-auto border-2 border-black dark:border-white">
-        <table class="w-full border-collapse bg-white dark:bg-gray-900 text-sm table-fixed min-w-[800px]">
-          <thead>
-            <tr class="bg-black text-white dark:bg-white dark:text-black">
-              <th (click)="toggleSort('title')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors border-r border-white/20 dark:border-black/20">
-                <div class="flex items-center justify-between">
-                  <span class="group-hover:translate-x-0.5 transition-transform duration-200">Session Goal</span>
-                  <span class="ml-2 font-mono">
-                    @if (sortBy() === 'title') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
-                  </span>
-                </div>
-              </th>
-              <th (click)="toggleSort('software_version')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-32 border-r border-white/20 dark:border-black/20">
-                <div class="flex items-center justify-between">
-                  <span class="group-hover:translate-x-0.5 transition-transform duration-200">Version</span>
-                  <span class="ml-2 font-mono">
-                    @if (sortBy() === 'software_version') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
-                  </span>
-                </div>
-              </th>
-              <th (click)="toggleSort('machine_name')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-32 border-r border-white/20 dark:border-black/20">
-                <div class="flex items-center justify-between">
-                  <span class="group-hover:translate-x-0.5 transition-transform duration-200">Machine</span>
-                  <span class="ml-2 font-mono">
-                    @if (sortBy() === 'machine_name') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
-                  </span>
-                </div>
-              </th>
-              <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-40 border-r border-white/20 dark:border-black/20">
-                <div class="flex items-center justify-between">
-                  <span class="group-hover:translate-x-0.5 transition-transform duration-200">Created</span>
-                  <span class="ml-2 font-mono">
-                    @if (sortBy() === 'created_at') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
-                  </span>
-                </div>
-              </th>
-              <th (click)="toggleSort('status')" class="group cursor-pointer px-4 py-2 text-right text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-28">
-                <div class="flex items-center justify-end">
-                  <span class="group-hover:-translate-x-0.5 transition-transform duration-200">Status</span>
-                  <span class="ml-2 font-mono">
-                    @if (sortBy() === 'status') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
-                    @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
-                  </span>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-black/10 dark:divide-white/10">
-            @for (session of sessions(); track session.id; let i = $index) {
-              <tr 
-                class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group leading-tight relative overflow-hidden animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
-                [style.animation-delay]="(i * 50) + 'ms'"
-              >
-                <td class="px-4 py-2 group-hover:pl-5 transition-all duration-200 border-r border-black/10 dark:border-white/10 relative">
-                  <!-- Selection Indicator - Now inside TD -->
-                  <div class="absolute left-0 top-0 bottom-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-top"></div>
-                  
-                  <div class="flex flex-col">
-                    <span class="text-xs font-black text-gray-900 dark:text-white group-hover:underline decoration-black dark:decoration-white decoration-2 cursor-pointer uppercase tracking-tight" [routerLink]="['/sessions', session.id]">
-                      {{ session.title }}
+      <div class="flex-grow overflow-y-auto custom-scrollbar border-2 border-black dark:border-white bg-white dark:bg-gray-900 relative">
+        <div class="min-w-full inline-block align-middle">
+          <table class="w-full border-collapse text-sm table-fixed min-w-[800px]">
+            <thead class="sticky top-0 z-20">
+              <tr class="bg-black text-white dark:bg-white dark:text-black">
+                <th (click)="toggleSort('title')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors border-r border-white/20 dark:border-black/20">
+                  <div class="flex items-center justify-between">
+                    <span class="group-hover:translate-x-0.5 transition-transform duration-200">Session Goal</span>
+                    <span class="ml-2 font-mono">
+                      @if (sortBy() === 'title') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                      @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
                     </span>
-                    <span class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5 font-bold uppercase transition-colors group-hover:text-black dark:group-hover:text-white">{{ session.charter }}</span>
                   </div>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap hidden md:table-cell border-r border-black/10 dark:border-white/10 w-32">
-                  <div class="flex items-center gap-2">
-                    <span class="text-[9px] font-black font-mono text-black dark:text-white bg-black/5 dark:bg-white/10 px-1.5 py-0.5 border border-black/10 transition-colors group-hover:bg-black/10">
-                      {{ session.software_version || '---' }}
+                </th>
+                <th (click)="toggleSort('software_version')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-32 border-r border-white/20 dark:border-black/20">
+                  <div class="flex items-center justify-between">
+                    <span class="group-hover:translate-x-0.5 transition-transform duration-200">Version</span>
+                    <span class="ml-2 font-mono">
+                      @if (sortBy() === 'software_version') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                      @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
                     </span>
-                    @if (session.software_version && session.software_version === currentLatestVersion()) {
-                      <span class="text-[8px] font-black uppercase tracking-tighter bg-black text-white dark:bg-white dark:text-black px-1 py-0.5 animate-pulse-slow">Latest</span>
-                    }
                   </div>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap hidden md:table-cell border-r border-black/10 dark:border-white/10 w-32">
-                  <span class="text-[9px] font-black font-mono text-gray-500 dark:text-gray-400 uppercase transition-colors group-hover:text-black dark:group-hover:text-white">
-                    {{ session.machine_name || '---' }}
-                  </span>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap hidden sm:table-cell border-r border-black/10 dark:border-white/10 w-40">
-                  <div class="flex flex-col">
-                    <span class="text-[10px] font-black font-mono text-gray-900 dark:text-white transition-colors group-hover:text-black dark:group-hover:text-white">{{ session.created_at | date:'yyyy-MM-dd' }}</span>
-                    <span class="text-[9px] font-bold font-mono text-gray-400 dark:text-gray-500 group-hover:text-gray-600 transition-colors">{{ session.created_at | date:'HH:mm' }}</span>
+                </th>
+                <th (click)="toggleSort('machine_name')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden md:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-32 border-r border-white/20 dark:border-black/20">
+                  <div class="flex items-center justify-between">
+                    <span class="group-hover:translate-x-0.5 transition-transform duration-200">Machine</span>
+                    <span class="ml-2 font-mono">
+                      @if (sortBy() === 'machine_name') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                      @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
+                    </span>
                   </div>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap text-right w-28">
-                  <span 
-                    [class]="'px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter border-2 inline-block transition-all duration-300 group-hover:scale-105 ' + statusClasses(session.status)"
-                  >
-                    {{ session.status }}
-                  </span>
-                </td>
+                </th>
+                <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-40 border-r border-white/20 dark:border-black/20">
+                  <div class="flex items-center justify-between">
+                    <span class="group-hover:translate-x-0.5 transition-transform duration-200">Created</span>
+                    <span class="ml-2 font-mono">
+                      @if (sortBy() === 'created_at') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                      @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
+                    </span>
+                  </div>
+                </th>
+                <th (click)="toggleSort('status')" class="group cursor-pointer px-4 py-2 text-right text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-28">
+                  <div class="flex items-center justify-end">
+                    <span class="group-hover:-translate-x-0.5 transition-transform duration-200">Status</span>
+                    <span class="ml-2 font-mono">
+                      @if (sortBy() === 'status') { {{ sortOrder() === 'ASC' ? '↑' : '↓' }} }
+                      @else { <span class="opacity-0 group-hover:opacity-50 transition-opacity">↓</span> }
+                    </span>
+                  </div>
+                </th>
               </tr>
-            } @empty {
-              @if (!isLoading()) {
-                <tr>
-                  <td colspan="5" class="px-4 py-24 text-center bg-gray-50/50 dark:bg-gray-800/20 border-t-2 border-black">
-                    <div class="max-w-md mx-auto space-y-4 animate-in fade-in zoom-in-95 duration-500">
-                      <div class="space-y-1">
-                        <h3 class="text-lg font-black uppercase tracking-tighter text-gray-900 dark:text-white">Manifest Empty</h3>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase leading-relaxed tracking-wider">
-                          No sessions match the active filters.
-                        </p>
-                      </div>
-                      <app-button size="sm" class="active:scale-95 transition-transform" (onClick)="openCreateModal()">+ Initialize New Session</app-button>
+            </thead>
+            <tbody class="divide-y divide-black/10 dark:divide-white/10">
+              @for (session of sessions(); track session.id; let i = $index) {
+                <tr 
+                  class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group leading-tight relative overflow-hidden animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
+                  [style.animation-delay]="(i * 50) + 'ms'"
+                >
+                  <td class="px-4 py-2 group-hover:pl-5 transition-all duration-200 border-r border-black/10 dark:border-white/10 relative">
+                    <!-- Selection Indicator - Now inside TD -->
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-top"></div>
+                    
+                    <div class="flex flex-col">
+                      <span class="text-xs font-black text-gray-900 dark:text-white group-hover:underline decoration-black dark:decoration-white decoration-2 cursor-pointer uppercase tracking-tight" [routerLink]="['/sessions', session.id]">
+                        {{ session.title }}
+                      </span>
+                      <span class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5 font-bold uppercase transition-colors group-hover:text-black dark:group-hover:text-white">{{ session.charter }}</span>
                     </div>
                   </td>
+                  <td class="px-4 py-2 whitespace-nowrap hidden md:table-cell border-r border-black/10 dark:border-white/10 w-32">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[9px] font-black font-mono text-black dark:text-white bg-black/5 dark:bg-white/10 px-1.5 py-0.5 border border-black/10 transition-colors group-hover:bg-black/10">
+                        {{ session.software_version || '---' }}
+                      </span>
+                      @if (session.software_version && session.software_version === currentLatestVersion()) {
+                        <span class="text-[8px] font-black uppercase tracking-tighter bg-black text-white dark:bg-white dark:text-black px-1 py-0.5 animate-pulse-slow">Latest</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="px-4 py-2 whitespace-nowrap hidden md:table-cell border-r border-black/10 dark:border-white/10 w-32">
+                    <span class="text-[9px] font-black font-mono text-gray-500 dark:text-gray-400 uppercase transition-colors group-hover:text-black dark:group-hover:text-white">
+                      {{ session.machine_name || '---' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 whitespace-nowrap hidden sm:table-cell border-r border-black/10 dark:border-white/10 w-40">
+                    <div class="flex flex-col">
+                      <span class="text-[10px] font-black font-mono text-gray-900 dark:text-white transition-colors group-hover:text-black dark:group-hover:text-white">{{ session.created_at | date:'yyyy-MM-dd' }}</span>
+                      <span class="text-[9px] font-bold font-mono text-gray-400 dark:text-gray-500 group-hover:text-gray-600 transition-colors">{{ session.created_at | date:'HH:mm' }}</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2 whitespace-nowrap text-right w-28">
+                    <span 
+                      [class]="'px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter border-2 inline-block transition-all duration-300 group-hover:scale-105 ' + statusClasses(session.status)"
+                    >
+                      {{ session.status }}
+                    </span>
+                  </td>
                 </tr>
+              } @empty {
+                @if (!isLoading()) {
+                  <tr>
+                    <td colspan="5" class="px-4 py-24 text-center bg-gray-50/50 dark:bg-gray-800/20">
+                      <div class="max-w-md mx-auto space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                        <div class="space-y-1">
+                          <h3 class="text-lg font-black uppercase tracking-tighter text-gray-900 dark:text-white">Manifest Empty</h3>
+                          <p class="text-[10px] font-bold text-gray-400 uppercase leading-relaxed tracking-wider">
+                            No sessions match the active filters.
+                          </p>
+                        </div>
+                        <app-button size="sm" class="active:scale-95 transition-transform" (onClick)="openCreateModal()">+ Initialize New Session</app-button>
+                      </div>
+                    </td>
+                  </tr>
+                }
               }
-            }
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       @if (hasMore()) {
-        <div class="flex justify-center pt-2">
+        <div class="flex-shrink-0 flex justify-center pt-6">
           <app-button variant="secondary" size="sm" [disabled]="isLoading()" (onClick)="loadMore()" class="active:scale-95 transition-transform">
             {{ isLoading() ? 'Loading...' : 'Fetch More Data' }}
           </app-button>
@@ -268,6 +270,11 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      height: 100%;
+      width: 100%;
+    }
     .animate-pulse-slow {
       animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }

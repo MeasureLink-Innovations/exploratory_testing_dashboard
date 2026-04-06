@@ -82,57 +82,59 @@ import { ModalComponent } from '../../components/modal/modal';
           </div>
         </div>
 
-        <!-- Row 3: Omnipresent Observation Capture -->
-        @if (session()?.status === 'in-progress' || session()?.status === 'debriefing') {
-          <div class="pt-2 border-t border-black/5 animate-in slide-in-from-top-2 duration-500">
-            <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-end">
-              <div class="flex-grow">
-                <div class="flex justify-between items-center mb-1">
-                   <label class="text-[10px] font-black uppercase tracking-widest text-black/40">Observation Capture</label>
-                   @if (selectedArtifacts().length > 0) {
-                      <div class="flex gap-1">
-                        @for (art of selectedArtifacts(); track art.id) {
-                          <span class="bg-black text-white text-[8px] px-1.5 py-0.5 flex items-center font-bold animate-in zoom-in-90 duration-200">
-                            {{ art.name }}
-                            <button (click)="unselectArtifact(art.id)" class="ml-1 opacity-50 hover:opacity-100 transition-opacity">×</button>
-                          </span>
-                        }
-                      </div>
-                   }
-                </div>
-                <app-input 
-                  type="textarea" 
-                  placeholder="What are you seeing? Record notes, findings, or issues in real-time..." 
-                  [value]="logEntry()"
-                  (valueChange)="logEntry.set($event)"
-                  class="text-sm font-bold !mb-0 transition-all focus-within:ring-2 focus-within:ring-black dark:focus-within:ring-white"
-                />
+        <!-- Row 3: Omnipresent Observation Capture (Permanent for Layout Consistency) -->
+        <div class="pt-2 border-t border-black/5 animate-in slide-in-from-top-2 duration-500">
+          <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-end">
+            <div class="flex-grow relative">
+              <div class="flex justify-between items-center mb-1">
+                  <label class="text-[10px] font-black uppercase tracking-widest text-black/40">Observation Capture</label>
+                  @if (selectedArtifacts().length > 0) {
+                    <div class="flex gap-1">
+                      @for (art of selectedArtifacts(); track art.id) {
+                        <span class="bg-black text-white text-[8px] px-1.5 py-0.5 flex items-center font-bold animate-in zoom-in-90 duration-200">
+                          {{ art.name }}
+                          <button (click)="unselectArtifact(art.id)" class="ml-1 opacity-50 hover:opacity-100 transition-opacity">×</button>
+                        </span>
+                      }
+                    </div>
+                  }
               </div>
-              
-              <div class="flex lg:flex-col gap-2 min-w-[160px]">
-                <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-9 flex-grow shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
-                  <button (click)="logCategory.set('note')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Note</button>
-                  <button (click)="logCategory.set('finding')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Find</button>
-                  <button (click)="logCategory.set('issue')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Issue</button>
-                </div>
-                <app-button class="font-black uppercase text-[10px] h-9 active:scale-95 transition-transform" [disabled]="!logEntry() || isSubmittingLog()" (onClick)="submitLog()">
-                  Commit Observation
-                </app-button>
+              <app-input 
+                type="textarea" 
+                [placeholder]="isCaptureLocked() ? 'Capture Buffer Locked - Session Not Active' : 'What are you seeing? Record notes, findings, or issues in real-time...'" 
+                [value]="logEntry()"
+                (valueChange)="logEntry.set($event)"
+                [disabled]="isCaptureLocked()"
+                class="text-sm font-bold !mb-0 transition-all focus-within:ring-2 focus-within:ring-black dark:focus-within:ring-white"
+              />
+              @if (isCaptureLocked()) {
+                <div class="absolute inset-0 bg-gray-50/10 dark:bg-black/10 backdrop-blur-[1px] cursor-not-allowed z-10"></div>
+              }
+            </div>
+            
+            <div class="flex lg:flex-col gap-2 min-w-[160px]">
+              <div class="flex border border-black dark:border-white p-0.5 bg-white dark:bg-gray-900 h-9 flex-grow shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
+                <button [disabled]="isCaptureLocked()" (click)="logCategory.set('note')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase transition-all ' + (logCategory() === 'note' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Note</button>
+                <button [disabled]="isCaptureLocked()" (click)="logCategory.set('finding')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'finding' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Find</button>
+                <button [disabled]="isCaptureLocked()" (click)="logCategory.set('issue')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Issue</button>
               </div>
+              <app-button class="font-black uppercase text-[10px] h-9 active:scale-95 transition-transform" [disabled]="isCaptureLocked() || !logEntry() || isSubmittingLog()" (onClick)="submitLog()">
+                Commit Observation
+              </app-button>
             </div>
           </div>
-        }
+        </div>
       </div>
 
       <!-- 3. MAIN WORK AREA -->
       <div class="flex-grow overflow-hidden pt-4 pb-2">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
           
           <!-- TIMELINE COLUMN -->
-          <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 overflow-y-auto pr-2 custom-scrollbar">
+          <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 pr-2">
             
             @if (session()?.status === 'planned') {
-              <div class="mb-6 animate-in zoom-in-95 duration-500">
+              <div class="mb-6 animate-in zoom-in-95 duration-500 flex-shrink-0">
                 <div class="p-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]">
                   <div class="flex items-start space-x-4">
                     <div class="flex-shrink-0 p-2 bg-white text-black dark:bg-black dark:text-white rounded-none border border-black dark:border-white animate-pulse-slow">
@@ -155,7 +157,7 @@ import { ModalComponent } from '../../components/modal/modal';
             }
 
             @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
-              <div class="mb-6 animate-in slide-in-from-left-4 duration-500">
+              <div class="mb-6 animate-in slide-in-from-left-4 duration-500 flex-shrink-0">
                 <app-card title="Post-Testing Summary">
                   @if (session()?.status === 'debriefing') {
                     <div class="space-y-3">
@@ -177,7 +179,7 @@ import { ModalComponent } from '../../components/modal/modal';
               </div>
             }
 
-            <app-card title="Execution Log" class="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
+            <app-card title="Execution Log" class="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both flex-grow min-h-0" contentClass="flex flex-col h-full">
               <div header-actions>
                 <button 
                   (click)="toggleLogSort()" 
@@ -193,7 +195,7 @@ import { ModalComponent } from '../../components/modal/modal';
                   </svg>
                 </button>
               </div>
-              <div class="flow-root min-h-[300px]">
+              <div class="flow-root overflow-y-auto custom-scrollbar flex-grow min-h-0 pr-2">
                 <ul role="list" class="-mb-8">
                   @for (log of sortedLogs(); track log.id; let last = $last; let i = $index) {
                     <li class="animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both" [style.animation-delay]="(i * 50) + 'ms'">
@@ -238,7 +240,7 @@ import { ModalComponent } from '../../components/modal/modal';
                 </ul>
 
                 @if (hasMoreLogs()) {
-                  <div class="flex justify-center mt-8 pb-10 lg:pb-0">
+                  <div class="flex justify-center mt-8 pb-10">
                     <app-button variant="ghost" [disabled]="isLoadingLogs()" class="font-bold active:scale-95 transition-transform" (onClick)="loadMoreLogs()">Load More</app-button>
                   </div>
                 }
@@ -249,9 +251,9 @@ import { ModalComponent } from '../../components/modal/modal';
           <!-- TOOLBELT COLUMN (Artifacts & Evidence) -->
           <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 animate-in fade-in slide-in-from-right-4 duration-700 delay-300 fill-mode-both">
             <div class="flex-grow overflow-hidden flex flex-col min-h-0">
-              <app-card title="Artifact Evidence Pool" class="h-full">
+              <app-card title="Artifact Evidence Pool" class="h-full flex-grow" contentClass="flex flex-col h-full">
                 <div class="flex flex-col h-full space-y-4">
-                  <div class="flex justify-between items-center">
+                  <div class="flex justify-between items-center flex-shrink-0">
                     <div class="flex gap-1.5">
                       <button (click)='artifactFilter.set("all")' [class]="'px-2.5 py-1 text-[9px] font-bold uppercase border transition-all active:scale-90 ' + (artifactFilter() === 'all' ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'text-gray-400 border-gray-200 hover:border-black dark:hover:border-white')">All</button>
                       <button (click)='artifactFilter.set("screenshot")' [class]="'px-2.5 py-1 text-[9px] font-bold uppercase border transition-all active:scale-90 ' + (artifactFilter() === 'screenshot' ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'text-gray-400 border-gray-200 hover:border-black dark:hover:border-white')">Images</button>
@@ -265,7 +267,7 @@ import { ModalComponent } from '../../components/modal/modal';
                     }
                   </div>
                   
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pr-1 custom-scrollbar border-t border-black/5 pt-4 flex-grow">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pr-1 custom-scrollbar border-t border-black/5 pt-4 flex-grow min-h-0">
                     @for (art of filteredArtifacts(); track art.id; let i = $index) {
                       <div 
                         class="group relative flex flex-col items-center p-2 border border-black/5 dark:border-white/5 hover:border-black dark:hover:border-white transition-all cursor-pointer bg-white dark:bg-gray-900 animate-in zoom-in-95 duration-300 fill-mode-both hover:-translate-y-0.5" 
@@ -394,6 +396,13 @@ import { ModalComponent } from '../../components/modal/modal';
     </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
     .animate-heartbeat {
       animation: heartbeat 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
@@ -453,6 +462,11 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   toggleLogSort() {
     this.logSortOrder.set(this.logSortOrder() === 'ASC' ? 'DESC' : 'ASC');
   }
+
+  isCaptureLocked = computed(() => {
+    const status = this.session()?.status;
+    return status === 'planned' || status === 'completed';
+  });
 
   filteredArtifacts = computed(() => {
     const list = this.artifacts();
@@ -596,7 +610,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   }
 
   submitLog() {
-    if (!this.logEntry() || this.isSubmittingLog()) return;
+    if (!this.logEntry() || this.isSubmittingLog() || this.isCaptureLocked()) return;
     
     this.isSubmittingLog.set(true);
     this.api.createLog({
