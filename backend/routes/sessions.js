@@ -2,28 +2,56 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// List all sessions (with search, pagination, and sorting)
+const VERSION_REGEX = /^v?\d+\.\d+\.\d+$/;
+
+function isValidVersion(version) {
+  if (!version) return true; // Allow null/empty
+  return VERSION_REGEX.test(version);
+}
+
+// List all sessions (with search, pagination, sorting, and version filtering)
 router.get('/', async (req, res, next) => {
   try {
-    const { search, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC' } = req.query;
+    const { search, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC', versionFilter } = req.query;
     
     // Whitelist for allowed sorting columns
     const allowedColumns = ['title', 'status', 'machine_name', 'software_version', 'created_at', 'duration_minutes'];
-    const safeSortBy = allowedColumns.includes(sortBy) ? sortBy : 'created_at';
-    const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+    const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder?.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+    
+    let orderByClause = '';
+    if (sortBy && allowedColumns.includes(sortBy)) {
+      orderByClause = `ORDER BY ${sortBy} ${safeSortOrder}`;
+      if (sortBy !== 'created_at') {
+        orderByClause += ', created_at DESC';
+      }
+    } else {
+      // Default sorting: latest version first, then latest creation date
+      orderByClause = 'ORDER BY software_version DESC NULLS LAST, created_at DESC';
+    }
 
     let query = 'SELECT *, COUNT(*) OVER() as total_count FROM sessions';
     const params = [];
+    let paramIdx = 1;
+    const whereClauses = [];
 
     if (search) {
-      query += ' WHERE title ILIKE $1 OR machine_name ILIKE $1 OR software_version ILIKE $1';
+      whereClauses.push(`(title ILIKE $${paramIdx} OR machine_name ILIKE $${paramIdx} OR software_version ILIKE $${paramIdx})`);
       params.push(`%${search}%`);
-      query += ` ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $2 OFFSET $3`;
-      params.push(parseInt(limit), parseInt(offset));
-    } else {
-      query += ` ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $1 OFFSET $2`;
-      params.push(parseInt(limit), parseInt(offset));
+      paramIdx++;
     }
+
+    if (versionFilter) {
+      whereClauses.push(`(software_version = $${paramIdx} OR software_version IS NULL)`);
+      params.push(versionFilter);
+      paramIdx++;
+    }
+
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    query += ` ${orderByClause} LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
+    params.push(parseInt(limit), parseInt(offset));
 
     const result = await db.query(query, params);
     const totalCount = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
@@ -42,6 +70,19 @@ router.get('/', async (req, res, next) => {
         offset: parseInt(offset)
       }
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get unique versions
+router.get('/versions', async (req, res, next) => {
+  try {
+    const result = await db.query(
+      'SELECT DISTINCT software_version FROM sessions WHERE software_version IS NOT NULL ORDER BY software_version DESC'
+    );
+    const versions = result.rows.map(row => row.software_version);
+    res.json(versions);
   } catch (err) {
     next(err);
   }
@@ -90,6 +131,11 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const { title, mission, charter, machine_name, software_version, duration_minutes } = req.body;
+    
+    if (software_version && !isValidVersion(software_version)) {
+      return res.status(400).json({ error: 'Invalid software version format. Use vX.Y.Z or X.Y.Z' });
+    }
+
     const result = await db.query(
       'INSERT INTO sessions (title, mission, charter, machine_name, software_version, duration_minutes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [title, mission, charter, machine_name, software_version, duration_minutes || 60]
@@ -106,6 +152,10 @@ router.put('/:id', async (req, res, next) => {
     const { id } = req.params;
     const { status, machine_name, software_version, title, mission, charter, start_time, end_time, duration_minutes, debrief_summary } = req.body;
     
+    if (software_version && !isValidVersion(software_version)) {
+      return res.status(400).json({ error: 'Invalid software version format. Use vX.Y.Z or X.Y.Z' });
+    }
+
     // Fetch current session to check status
     const currentResult = await db.query('SELECT * FROM sessions WHERE id = $1', [id]);
     if (currentResult.rows.length === 0) {
