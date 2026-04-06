@@ -126,13 +126,13 @@ import { ModalComponent } from '../../components/modal/modal';
 
       <!-- 3. MAIN WORK AREA -->
       <div class="flex-grow overflow-hidden pt-4 pb-2">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
           
           <!-- TIMELINE COLUMN -->
-          <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 overflow-y-auto pr-2 custom-scrollbar">
+          <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 pr-2">
             
             @if (session()?.status === 'planned') {
-              <div class="mb-6 animate-in zoom-in-95 duration-500">
+              <div class="mb-6 animate-in zoom-in-95 duration-500 flex-shrink-0">
                 <div class="p-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]">
                   <div class="flex items-start space-x-4">
                     <div class="flex-shrink-0 p-2 bg-white text-black dark:bg-black dark:text-white rounded-none border border-black dark:border-white animate-pulse-slow">
@@ -155,7 +155,7 @@ import { ModalComponent } from '../../components/modal/modal';
             }
 
             @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
-              <div class="mb-6 animate-in slide-in-from-left-4 duration-500">
+              <div class="mb-6 animate-in slide-in-from-left-4 duration-500 flex-shrink-0">
                 <app-card title="Post-Testing Summary">
                   @if (session()?.status === 'debriefing') {
                     <div class="space-y-3">
@@ -177,7 +177,7 @@ import { ModalComponent } from '../../components/modal/modal';
               </div>
             }
 
-            <app-card title="Execution Log" class="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
+            <app-card title="Execution Log" class="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both flex-grow min-h-0" contentClass="flex flex-col h-full">
               <div header-actions>
                 <button 
                   (click)="toggleLogSort()" 
@@ -193,7 +193,7 @@ import { ModalComponent } from '../../components/modal/modal';
                   </svg>
                 </button>
               </div>
-              <div class="flow-root min-h-[300px]">
+              <div class="flow-root overflow-y-auto custom-scrollbar flex-grow min-h-0 pr-2">
                 <ul role="list" class="-mb-8">
                   @for (log of sortedLogs(); track log.id; let last = $last; let i = $index) {
                     <li class="animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both" [style.animation-delay]="(i * 50) + 'ms'">
@@ -238,7 +238,7 @@ import { ModalComponent } from '../../components/modal/modal';
                 </ul>
 
                 @if (hasMoreLogs()) {
-                  <div class="flex justify-center mt-8 pb-10 lg:pb-0">
+                  <div class="flex justify-center mt-8 pb-10">
                     <app-button variant="ghost" [disabled]="isLoadingLogs()" class="font-bold active:scale-95 transition-transform" (onClick)="loadMoreLogs()">Load More</app-button>
                   </div>
                 }
@@ -249,9 +249,9 @@ import { ModalComponent } from '../../components/modal/modal';
           <!-- TOOLBELT COLUMN (Artifacts & Evidence) -->
           <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 animate-in fade-in slide-in-from-right-4 duration-700 delay-300 fill-mode-both">
             <div class="flex-grow overflow-hidden flex flex-col min-h-0">
-              <app-card title="Artifact Evidence Pool" class="h-full">
+              <app-card title="Artifact Evidence Pool" class="h-full flex-grow" contentClass="flex flex-col h-full">
                 <div class="flex flex-col h-full space-y-4">
-                  <div class="flex justify-between items-center">
+                  <div class="flex justify-between items-center flex-shrink-0">
                     <div class="flex gap-1.5">
                       <button (click)='artifactFilter.set("all")' [class]="'px-2.5 py-1 text-[9px] font-bold uppercase border transition-all active:scale-90 ' + (artifactFilter() === 'all' ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'text-gray-400 border-gray-200 hover:border-black dark:hover:border-white')">All</button>
                       <button (click)='artifactFilter.set("screenshot")' [class]="'px-2.5 py-1 text-[9px] font-bold uppercase border transition-all active:scale-90 ' + (artifactFilter() === 'screenshot' ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'text-gray-400 border-gray-200 hover:border-black dark:hover:border-white')">Images</button>
@@ -265,7 +265,7 @@ import { ModalComponent } from '../../components/modal/modal';
                     }
                   </div>
                   
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pr-1 custom-scrollbar border-t border-black/5 pt-4 flex-grow">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pr-1 custom-scrollbar border-t border-black/5 pt-4 flex-grow min-h-0">
                     @for (art of filteredArtifacts(); track art.id; let i = $index) {
                       <div 
                         class="group relative flex flex-col items-center p-2 border border-black/5 dark:border-white/5 hover:border-black dark:hover:border-white transition-all cursor-pointer bg-white dark:bg-gray-900 animate-in zoom-in-95 duration-300 fill-mode-both hover:-translate-y-0.5" 
@@ -394,6 +394,13 @@ import { ModalComponent } from '../../components/modal/modal';
     </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
     .animate-heartbeat {
       animation: heartbeat 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
