@@ -108,10 +108,10 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
                 class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group leading-tight relative overflow-hidden animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
                 [style.animation-delay]="(i * 50) + 'ms'"
               >
-                <!-- Selection Indicator -->
-                <div class="absolute left-0 top-0 bottom-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-top"></div>
-                
-                <td class="px-4 py-2 group-hover:pl-5 transition-all duration-200 border-r border-black/10 dark:border-white/10">
+                <td class="px-4 py-2 group-hover:pl-5 transition-all duration-200 border-r border-black/10 dark:border-white/10 relative">
+                  <!-- Selection Indicator - Now inside TD -->
+                  <div class="absolute left-0 top-0 bottom-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-top"></div>
+                  
                   <div class="flex flex-col">
                     <span class="text-xs font-black text-gray-900 dark:text-white group-hover:underline decoration-black dark:decoration-white decoration-2 cursor-pointer uppercase tracking-tight" [routerLink]="['/sessions', session.id]">
                       {{ session.title }}
