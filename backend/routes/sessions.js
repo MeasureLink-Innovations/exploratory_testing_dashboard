@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const authMiddleware = require('../middleware/auth.middleware');
 
 const VERSION_REGEX = /^v?\d+\.\d+\.\d+$/;
 
@@ -8,6 +9,9 @@ function isValidVersion(version) {
   if (!version) return true; // Allow null/empty
   return VERSION_REGEX.test(version);
 }
+
+// Apply auth middleware to all routes in this router
+router.use(authMiddleware);
 
 // List all sessions (with search, pagination, sorting, and version filtering)
 router.get('/', async (req, res, next) => {
@@ -29,19 +33,19 @@ router.get('/', async (req, res, next) => {
       orderByClause = 'ORDER BY software_version DESC NULLS LAST, created_at DESC';
     }
 
-    let query = 'SELECT *, COUNT(*) OVER() as total_count FROM sessions';
+    let query = 'SELECT s.*, u.username as creator_name, COUNT(*) OVER() as total_count FROM sessions s LEFT JOIN users u ON s.user_id = u.id';
     const params = [];
     let paramIdx = 1;
     const whereClauses = [];
 
     if (search) {
-      whereClauses.push(`(title ILIKE $${paramIdx} OR machine_name ILIKE $${paramIdx} OR software_version ILIKE $${paramIdx})`);
+      whereClauses.push(`(s.title ILIKE $${paramIdx} OR s.machine_name ILIKE $${paramIdx} OR s.software_version ILIKE $${paramIdx})`);
       params.push(`%${search}%`);
       paramIdx++;
     }
 
     if (versionFilter) {
-      whereClauses.push(`(software_version = $${paramIdx} OR software_version IS NULL)`);
+      whereClauses.push(`(s.software_version = $${paramIdx} OR s.software_version IS NULL)`);
       params.push(versionFilter);
       paramIdx++;
     }
@@ -92,15 +96,20 @@ router.get('/versions', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const sessionResult = await db.query('SELECT * FROM sessions WHERE id = $1', [id]);
+    const sessionResult = await db.query(`
+      SELECT s.*, u.username as creator_name 
+      FROM sessions s 
+      LEFT JOIN users u ON s.user_id = u.id 
+      WHERE s.id = $1
+    `, [id]);
     
     if (sessionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
     
-    // Get logs with their linked artifacts
+    // Get logs with their linked artifacts and user attribution
     const logsResult = await db.query(`
-      SELECT l.id, l.session_id, l.timestamp, l.content, l.category, l.author, l.created_at,
+      SELECT l.id, l.session_id, l.timestamp, l.content, l.category, l.author, l.created_at, l.user_id, u.username as logger_name,
       COALESCE(
         json_agg(
           json_build_object('id', a.id, 'name', a.name, 'type', a.type)
@@ -108,10 +117,11 @@ router.get('/:id', async (req, res, next) => {
         '[]'
       ) as artifacts
       FROM logs l
+      LEFT JOIN users u ON l.user_id = u.id
       LEFT JOIN log_artifacts la ON l.id = la.log_id
       LEFT JOIN artifacts a ON la.artifact_id = a.id
       WHERE l.session_id = $1
-      GROUP BY l.id
+      GROUP BY l.id, u.username
       ORDER BY l.timestamp ASC
     `, [id]);
 
@@ -131,14 +141,15 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const { title, mission, charter, machine_name, software_version, duration_minutes } = req.body;
+    const userId = req.user.id;
     
     if (software_version && !isValidVersion(software_version)) {
       return res.status(400).json({ error: 'Invalid software version format. Use vX.Y.Z or X.Y.Z' });
     }
 
     const result = await db.query(
-      'INSERT INTO sessions (title, mission, charter, machine_name, software_version, duration_minutes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [title, mission, charter, machine_name, software_version, duration_minutes || 60]
+      'INSERT INTO sessions (title, mission, charter, machine_name, software_version, duration_minutes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [title, mission, charter, machine_name, software_version, duration_minutes || 60, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

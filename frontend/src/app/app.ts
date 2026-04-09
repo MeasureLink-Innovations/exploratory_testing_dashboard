@@ -1,23 +1,39 @@
 import { Component, signal, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router, RouterLink } from '@angular/router';
 import { ThemeService, Theme } from './services/theme.service';
+import { AuthService } from './services/auth.service';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule],
+  imports: [RouterOutlet, RouterLink, CommonModule],
   template: `
     <div class="h-screen paper-bg text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 flex flex-col overflow-hidden">
       <header class="bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white px-6 py-3 flex items-center justify-between flex-shrink-0 relative z-50">
         <div class="flex items-center gap-4">
-          <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+          <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tighter leading-none cursor-pointer" routerLink="/">
             Exploratory Dashboard
           </h1>
           <span class="text-[9px] font-black uppercase text-gray-400 dark:text-gray-600 hidden sm:inline tracking-widest border-l border-black/10 dark:border-white/10 pl-4">v1.0.0</span>
+          
+          @if (authService.isAdmin() && !authService.mustChangePassword()) {
+            <a routerLink="/admin" class="ml-4 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:underline">System_Admin</a>
+          }
         </div>
 
         <div class="flex items-center gap-6">
+          <!-- User Session Info -->
+          @if (authService.isAuthenticated()) {
+            <div class="flex items-center gap-3 pr-6 border-r border-black/10 dark:border-white/10 hidden md:flex">
+              <div class="flex flex-col items-end">
+                <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Authenticated_Operator</span>
+                <span class="text-[10px] font-black uppercase text-black dark:text-white leading-none">{{ authService.currentUser()?.username }}</span>
+              </div>
+              <button (click)="logout()" class="px-2 py-1 border border-black dark:border-white text-[8px] font-black uppercase hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all active:scale-95">Disconnect</button>
+            </div>
+          }
+
           <!-- Instrument-style Theme Slider -->
           <div class="flex items-center gap-3">
             <span class="text-[9px] font-black uppercase tracking-widest text-gray-400">Mode</span>
@@ -44,6 +60,8 @@ import { CommonModule } from '@angular/common';
 export class App {
   protected readonly title = signal('frontend');
   public themeService = inject(ThemeService);
+  public authService = inject(AuthService);
+  private router = inject(Router);
 
   getSliderPosition() {
     switch(this.themeService.theme()) {
@@ -52,5 +70,10 @@ export class App {
       case 'system': return 'translateX(200%)';
       default: return 'translateX(0)';
     }
+  }
+
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

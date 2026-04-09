@@ -83,6 +83,9 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
                     </span>
                   </div>
                 </th>
+                <th class="px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden lg:table-cell w-32 border-r border-white/20 dark:border-black/20">
+                  Creator
+                </th>
                 <th (click)="toggleSort('created_at')" class="group cursor-pointer px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest hidden sm:table-cell hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors w-40 border-r border-white/20 dark:border-black/20">
                   <div class="flex items-center justify-between">
                     <span class="group-hover:translate-x-0.5 transition-transform duration-200">Created</span>
@@ -133,6 +136,11 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
                   <td class="px-4 py-2 whitespace-nowrap hidden md:table-cell border-r border-black/10 dark:border-white/10 w-32">
                     <span class="text-[9px] font-black font-mono text-gray-500 dark:text-gray-400 uppercase transition-colors group-hover:text-black dark:group-hover:text-white">
                       {{ session.machine_name || '---' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 whitespace-nowrap hidden lg:table-cell border-r border-black/10 dark:border-white/10 w-32">
+                    <span class="text-[9px] font-black uppercase text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white transition-colors">
+                      {{ session.creator_name || 'ANONYMOUS' }}
                     </span>
                   </td>
                   <td class="px-4 py-2 whitespace-nowrap hidden sm:table-cell border-r border-black/10 dark:border-white/10 w-40">

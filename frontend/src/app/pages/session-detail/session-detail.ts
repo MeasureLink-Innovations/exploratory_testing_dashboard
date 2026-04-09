@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal, inject, computed } from '@angular
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
+import { AuthService } from '../../services/auth.service';
 import { ButtonComponent } from '../../components/button/button';
 import { CardComponent } from '../../components/card/card';
 import { InputComponent } from '../../components/input/input';
@@ -27,9 +28,12 @@ import { ModalComponent } from '../../components/modal/modal';
             <div class="bg-black text-white dark:bg-white dark:text-black px-2 py-1 font-mono text-lg font-black tracking-tighter shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] animate-in slide-in-from-left-2 duration-500">
               SESS_{{ session()?.id }}
             </div>
-            <h2 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words animate-in slide-in-from-left-4 duration-700">
-              {{ session()?.title }}
-            </h2>
+            <div class="flex flex-col">
+              <h2 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words animate-in slide-in-from-left-4 duration-700">
+                {{ session()?.title }}
+              </h2>
+              <span class="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30 mt-1">Creator: {{ session()?.creator_name || 'ANONYMOUS' }}</span>
+            </div>
           </div>
           
           <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
@@ -211,7 +215,10 @@ import { ModalComponent } from '../../components/modal/modal';
                           </div>
                           <div class="min-w-0 flex-1 pt-1 space-y-2">
                             <div class="flex justify-between items-start space-x-2">
-                              <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug break-words tracking-tight">{{ log.content }}</p>
+                              <div class="flex flex-col">
+                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug break-words tracking-tight">{{ log.content }}</p>
+                                <span class="text-[8px] font-black uppercase text-black/30 dark:text-white/30 mt-0.5">Author: {{ log.logger_name || log.author || 'ANONYMOUS' }}</span>
+                              </div>
                               <div class="text-[9px] font-bold font-mono text-gray-400 whitespace-nowrap pt-0.5">
                                 {{ log.timestamp | date:'HH:mm' }}
                               </div>
@@ -421,6 +428,7 @@ import { ModalComponent } from '../../components/modal/modal';
 export class SessionDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
+  private authService = inject(AuthService);
   
   session = signal<any>(null);
   logs = signal<any[]>([]);
@@ -617,7 +625,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
       session_id: this.session().id,
       content: this.logEntry(),
       category: this.logCategory(),
-      author: 'tester',
+      author: this.authService.currentUser()?.username || 'tester',
       artifact_ids: this.selectedArtifacts().map(a => a.id)
     }).subscribe({
       next: (newLog) => {

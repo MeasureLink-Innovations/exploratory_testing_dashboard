@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model artifacts {
+  id            Int             @id @default(autoincrement())
+  session_id    Int?
+  name          String          @db.VarChar(255)
+  type          String          @db.VarChar(50)
+  data          Bytes
+  metadata      Json?           @default("{}")
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  sessions      sessions?       @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  log_artifacts log_artifacts[]
+
+  @@index([session_id], map: "idx_artifacts_session_id")
+}
+
+model log_artifacts {
+  log_id      Int
+  artifact_id Int
+  artifacts   artifacts @relation(fields: [artifact_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  logs        logs      @relation(fields: [log_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([log_id, artifact_id])
+  @@index([artifact_id], map: "idx_log_artifacts_artifact_id")
+  @@index([log_id], map: "idx_log_artifacts_log_id")
+}
+
+model logs {
+  id            Int             @id @default(autoincrement())
+  session_id    Int?
+  user_id       Int?
+  timestamp     DateTime?       @default(now()) @db.Timestamp(6)
+  content       String
+  category      String          @db.VarChar(50)
+  author        String          @db.VarChar(50)
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  log_artifacts log_artifacts[]
+  sessions      sessions?       @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users?          @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([session_id], map: "idx_logs_session_id")
+  @@index([user_id], map: "idx_logs_user_id")
+}
+
+model sessions {
+  id               Int         @id @default(autoincrement())
+  title            String      @db.VarChar(255)
+  mission          String
+  charter          String
+  machine_name     String?     @db.VarChar(255)
+  status           String?     @default("planned") @db.VarChar(50)
+  start_time       DateTime?   @db.Timestamp(6)
+  end_time         DateTime?   @db.Timestamp(6)
+  created_at       DateTime?   @default(now()) @db.Timestamp(6)
+  duration_minutes Int?        @default(60)
+  debrief_summary  String?
+  software_version String?     @db.VarChar(255)
+  user_id          Int?
+  artifacts        artifacts[]
+  logs             logs[]
+  users            users?      @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_sessions_user_id")
+}
+
+model users {
+  id                   Int        @id @default(autoincrement())
+  email                String     @unique @db.VarChar(255)
+  username             String     @unique @db.VarChar(255)
+  password_hash        String     @db.VarChar(255)
+  is_admin             Boolean    @default(false)
+  must_change_password Boolean    @default(true)
+  created_at           DateTime?  @default(now()) @db.Timestamp(6)
+  sessions             sessions[]
+  logs                 logs[]
+}

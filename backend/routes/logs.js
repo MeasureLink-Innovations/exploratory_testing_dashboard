@@ -1,11 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const authMiddleware = require('../middleware/auth.middleware');
+
+// Apply auth middleware to all routes in this router
+router.use(authMiddleware);
 
 // Create a log entry
 router.post('/', async (req, res, next) => {
   try {
     const { session_id, content, category, author, artifact_ids } = req.body;
+    const userId = req.user.id;
     
     if (!session_id || !content || !category || !author) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -24,8 +29,8 @@ router.post('/', async (req, res, next) => {
     await db.query('BEGIN');
     
     const result = await db.query(
-      'INSERT INTO logs (session_id, content, category, author) VALUES ($1, $2, $3, $4) RETURNING *',
-      [session_id, content, category, author]
+      'INSERT INTO logs (session_id, content, category, author, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [session_id, content, category, author, userId]
     );
     
     const logId = result.rows[0].id;
@@ -41,9 +46,9 @@ router.post('/', async (req, res, next) => {
     
     await db.query('COMMIT');
     
-    // Fetch the log with artifacts for response
+    // Fetch the log with artifacts and user attribution for response
     const finalResult = await db.query(`
-      SELECT l.*, 
+      SELECT l.*, u.username as logger_name,
       COALESCE(
         json_agg(
           json_build_object('id', a.id, 'name', a.name, 'type', a.type)
@@ -51,10 +56,11 @@ router.post('/', async (req, res, next) => {
         '[]'
       ) as artifacts
       FROM logs l
+      LEFT JOIN users u ON l.user_id = u.id
       LEFT JOIN log_artifacts la ON l.id = la.log_id
       LEFT JOIN artifacts a ON la.artifact_id = a.id
       WHERE l.id = $1
-      GROUP BY l.id
+      GROUP BY l.id, u.username
     `, [logId]);
 
     res.status(201).json(finalResult.rows[0]);
@@ -106,7 +112,7 @@ router.get('/session/:sessionId', async (req, res, next) => {
     const { limit = 50, offset = 0 } = req.query;
     
     const result = await db.query(`
-      SELECT l.*, COUNT(*) OVER() as total_count,
+      SELECT l.*, u.username as logger_name, COUNT(*) OVER() as total_count,
       COALESCE(
         json_agg(
           json_build_object('id', a.id, 'name', a.name, 'type', a.type)
@@ -114,10 +120,11 @@ router.get('/session/:sessionId', async (req, res, next) => {
         '[]'
       ) as artifacts
       FROM logs l
+      LEFT JOIN users u ON l.user_id = u.id
       LEFT JOIN log_artifacts la ON l.id = la.log_id
       LEFT JOIN artifacts a ON la.artifact_id = a.id
       WHERE l.session_id = $1
-      GROUP BY l.id
+      GROUP BY l.id, u.username
       ORDER BY l.timestamp ASC
       LIMIT $2 OFFSET $3
     `, [sessionId, parseInt(limit), parseInt(offset)]);

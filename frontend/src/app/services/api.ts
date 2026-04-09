@@ -83,4 +83,13 @@ export class ApiService {
   getArtifactUrl(id: number): string {
     return `${this.apiUrl}/artifacts/${id}`;
   }
+
+  // Admin
+  getUsers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/admin/users`);
+  }
+
+  createOperator(userData: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/admin/users`, userData);
+  }
 }
