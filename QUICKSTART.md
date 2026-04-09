@@ -10,7 +10,67 @@ This guide will help you set up and run the Exploratory Testing Dashboard locall
 
 ---
 
-## 1. Backend Setup
+## One-command setup with Docker Compose (recommended)
+
+From the project root:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+- `db` (PostgreSQL, database `exploratory_testing`)
+- `backend` (Express API on `http://localhost:3000`)
+- `frontend` (Angular app on `http://localhost:4200`)
+
+The backend automatically:
+1. Runs Prisma migrations
+2. Bootstraps an initial admin user if none exists
+
+To get the initial admin password, check backend logs:
+
+```bash
+docker compose logs backend
+```
+
+Look for:
+- `USERNAME: admin`
+- `INITIAL PASSWORD: <generated-password>`
+
+### Reset admin password in Docker (local/dev)
+
+```bash
+docker compose exec backend node <<'NODE'
+const db = require('./db');
+const { hashPassword } = require('./services/auth.service');
+
+(async () => {
+  const username = 'admin';
+  const email = 'admin@system.internal';
+  const password = 'AdminTemp123!'; // change before running
+  const password_hash = await hashPassword(password);
+
+  const existing = await db.query('SELECT id FROM users WHERE is_admin = true ORDER BY id ASC LIMIT 1');
+  if (!existing.rows.length) throw new Error('No admin user found. Restart backend to run bootstrap.');
+
+  await db.query(
+    'UPDATE users SET username = $1, email = $2, password_hash = $3, must_change_password = true WHERE id = $4',
+    [username, email, password_hash, existing.rows[0].id]
+  );
+
+  console.log('Admin password reset complete.');
+  console.log(`username: ${username}`);
+  console.log(`password: ${password}`);
+  await db.pool.end();
+})();
+NODE
+```
+
+> The next login will require `/setup-account` (`must_change_password = true`).
+
+---
+
+## 1. Backend Setup (manual)
 
 1. **Navigate to the backend directory**:
    ```bash
@@ -35,11 +95,57 @@ This guide will help you set up and run the Exploratory Testing Dashboard locall
    npm run migrate
    ```
 
-5. **Start the Server**:
+5. **Bootstrap the initial admin account (first login only)**:
+
+   Public registration is disabled. You must create an admin user from the backend CLI:
+   ```bash
+   node scripts/bootstrap-admin.js
+   ```
+
+   If no admin exists, this prints credentials like:
+   - `USERNAME: admin`
+   - `INITIAL PASSWORD: <generated-password>`
+
+   Save this password. On first login, you will be forced to set a new password.
+
+6. **Start the Server**:
    ```bash
    npm run dev
    ```
    The API will be available at `http://localhost:3000`.
+
+### Resetting the initial admin password (local/dev)
+
+If you lose the bootstrap password in local development, you can reset an existing admin user:
+
+```bash
+node <<'NODE'
+const db = require('./db');
+const { hashPassword } = require('./services/auth.service');
+
+(async () => {
+  const username = 'admin';
+  const email = 'admin@system.internal';
+  const password = 'AdminTemp123!'; // change this before running
+  const password_hash = await hashPassword(password);
+
+  const existing = await db.query('SELECT id FROM users WHERE is_admin = true ORDER BY id ASC LIMIT 1');
+  if (!existing.rows.length) throw new Error('No admin user found. Run node scripts/bootstrap-admin.js first.');
+
+  await db.query(
+    'UPDATE users SET username = $1, email = $2, password_hash = $3, must_change_password = true WHERE id = $4',
+    [username, email, password_hash, existing.rows[0].id]
+  );
+
+  console.log('Admin password reset complete. Login with:');
+  console.log(`username: ${username}`);
+  console.log(`password: ${password}`);
+  await db.pool.end();
+})();
+NODE
+```
+
+> This forces the admin through `/setup-account` on next login (`must_change_password = true`).
 
 ---
 
@@ -93,3 +199,4 @@ python test_push.py 1 ./logs/error.log log
 
 - **CORS Errors**: Ensure the backend `PORT` matches the `apiUrl` in `frontend/src/app/services/api.ts`.
 - **Database Connection**: Verify your `DATABASE_URL` and ensure PostgreSQL is accepting local connections.
+- **Invalid admin credentials**: Re-run `node scripts/bootstrap-admin.js` (if no admin exists) or use the reset snippet above for local/dev.
