@@ -70,13 +70,25 @@ model sessions {
 }
 
 model users {
-  id                   Int        @id @default(autoincrement())
-  email                String     @unique @db.VarChar(255)
-  username             String     @unique @db.VarChar(255)
-  password_hash        String     @db.VarChar(255)
-  is_admin             Boolean    @default(false)
-  must_change_password Boolean    @default(true)
-  created_at           DateTime?  @default(now()) @db.Timestamp(6)
+  id                   Int                    @id @default(autoincrement())
+  email                String                 @unique @db.VarChar(255)
+  username             String                 @unique @db.VarChar(255)
+  password_hash        String                 @db.VarChar(255)
+  is_admin             Boolean                @default(false)
+  must_change_password Boolean                @default(true)
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
   sessions             sessions[]
   logs                 logs[]
+  test_object_versions test_object_versions[]
+}
+
+model test_object_versions {
+  id         Int       @id @default(autoincrement())
+  version    String    @unique @db.VarChar(255)
+  created_by Int?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users?    @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_test_object_versions_created_at")
+  @@index([created_by], map: "idx_test_object_versions_created_by")
 }

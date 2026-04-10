@@ -32,7 +32,7 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
             <select 
               [value]="selectedVersion() || ''"
               (change)="onVersionChange($any($event.target).value)"
-              class="bg-white dark:bg-gray-900 border-2 border-black dark:border-white px-2 h-9 text-[10px] font-black uppercase focus:outline-none hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              class="bg-white dark:bg-gray-900 border-2 border-black dark:border-white px-2 h-11 text-[10px] font-black uppercase focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               <option value="">All Versions</option>
               @for (v of availableVersions(); track v) {
@@ -252,15 +252,18 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
               [value]="newSession().machine_name"
               (valueChange)="updateNewSession('machine_name', $event)"
             />
-            <div class="space-y-1">
-              <app-input 
-                label="SW Version" 
-                placeholder="v1.2.3" 
+            <div>
+              <label class="block text-xs font-black uppercase tracking-widest text-gray-900 dark:text-gray-100 mb-1.5">SW Version</label>
+              <select
                 [value]="newSession().software_version"
-                (valueChange)="updateNewSession('software_version', $event)"
-                class="!mb-0"
-              />
-              <p class="text-[8px] font-bold text-gray-400 uppercase tracking-tighter px-1">Pattern: vX.Y.Z</p>
+                (change)="updateNewSession('software_version', $any($event.target).value)"
+                class="w-full px-3 py-2 min-h-11 bg-white dark:bg-gray-900 border-2 border-gray-900 dark:border-gray-100 rounded-none focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white focus:bg-gray-50 dark:focus:bg-gray-800 dark:text-white sm:text-sm transition-all"
+              >
+                <option value="" disabled>Select version</option>
+                @for (v of availableVersions(); track v) {
+                  <option [value]="v">{{ v }}</option>
+                }
+              </select>
             </div>
           </div>
           <app-input 
@@ -296,7 +299,7 @@ export class SessionListComponent implements OnInit {
   
   sessions = signal<any[]>([]);
   isModalOpen = signal(false);
-  newSession = signal({ title: '', mission: '-', charter: '', machine_name: '', software_version: '', duration_minutes: 60 });
+  newSession = signal({ title: '', mission: '-', charter: '', software_version: '', machine_name: '', duration_minutes: 60 });
   searchQuery = signal('');
   
   // Version Filtering state
@@ -387,6 +390,11 @@ export class SessionListComponent implements OnInit {
     this.selectedTemplate.set(session);
     this.updateNewSession('title', session.title);
     this.updateNewSession('charter', session.charter);
+
+    if (session.software_version && this.availableVersions().includes(session.software_version)) {
+      this.updateNewSession('software_version', session.software_version);
+    }
+
     this.historicalSessions.set([]);
     this.templateSearchQuery.set('');
   }
@@ -437,7 +445,14 @@ export class SessionListComponent implements OnInit {
   }
 
   openCreateModal() {
-    this.newSession.set({ title: '', mission: '-', charter: '', machine_name: '', software_version: '', duration_minutes: 60 });
+    this.newSession.set({
+      title: '',
+      mission: '-',
+      charter: '',
+      software_version: this.availableVersions()[0] || '',
+      machine_name: '',
+      duration_minutes: 60,
+    });
     this.selectedTemplate.set(null);
     this.templateSearchQuery.set('');
     this.historicalSessions.set([]);
@@ -453,7 +468,7 @@ export class SessionListComponent implements OnInit {
 
   isValid() {
     const s = this.newSession();
-    return s.title && s.charter;
+    return s.title && s.charter && s.software_version;
   }
 
   createSession() {

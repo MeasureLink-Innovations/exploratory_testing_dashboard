@@ -13,6 +13,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin')); // Admin routes
+app.use('/api/versions', require('./routes/versions'));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/logs', require('./routes/logs'));
 app.use('/api/artifacts', require('./routes/artifacts'));
