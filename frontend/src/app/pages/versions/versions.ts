@@ -12,7 +12,7 @@ import { ButtonComponent } from '../../components/button/button';
     <div class="h-full flex flex-col overflow-hidden px-2 sm:px-6 py-6 animate-in fade-in duration-700 ease-out">
       <div class="flex-shrink-0 border-b-2 border-black dark:border-white pb-6 mb-6">
         <h2 class="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Version Catalog</h2>
-        <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">Selectable Test Object Versions</p>
+        <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">Manage selectable software versions</p>
       </div>
 
       <div class="flex-shrink-0 border-2 border-black dark:border-white p-4 mb-6 bg-white dark:bg-gray-900">
@@ -21,7 +21,7 @@ import { ButtonComponent } from '../../components/button/button';
         </p>
 
         <app-input
-          label="Add Version"
+          label="Add version"
           placeholder="v1.2.3"
           [value]="newVersion()"
           [disabled]="isSubmitting()"
@@ -80,7 +80,7 @@ import { ButtonComponent } from '../../components/button/button';
               </tr>
             } @empty {
               <tr>
-                <td colspan="3" class="px-4 py-16 text-center text-[10px] font-black uppercase text-gray-400">No selectable versions configured</td>
+                <td colspan="3" class="px-4 py-16 text-center text-[10px] font-black uppercase text-gray-400">No selectable versions yet</td>
               </tr>
             }
           </tbody>

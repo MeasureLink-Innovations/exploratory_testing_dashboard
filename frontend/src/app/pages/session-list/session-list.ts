@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, EffectRef, effect, computed } from '@angular/core';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api';
@@ -22,7 +22,7 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
       <div class="flex-shrink-0 flex flex-col lg:flex-row justify-between items-end gap-6 border-b-2 border-black dark:border-white pb-6 mb-8">
         <div class="flex-grow">
           <h2 class="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Session Archive</h2>
-          <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">Exploratory Testing Manifest</p>
+          <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">Track and review exploratory test sessions</p>
         </div>
         
         <div class="flex flex-wrap items-end gap-4 w-full lg:w-auto">
@@ -50,6 +50,12 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
           <app-button class="h-9 whitespace-nowrap active:scale-95 transition-transform" (onClick)="openCreateModal()">+ New Manifest</app-button>
         </div>
       </div>
+
+      @if (listError()) {
+        <div class="mb-4 border border-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2">
+          <p class="text-[10px] font-bold text-red-700 dark:text-red-300">{{ listError() }}</p>
+        </div>
+      }
 
       <div class="flex-grow overflow-y-auto custom-scrollbar border-2 border-black dark:border-white bg-white dark:bg-gray-900 relative">
         <div class="min-w-full inline-block align-middle">
@@ -168,7 +174,7 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
                             No sessions match the active filters.
                           </p>
                         </div>
-                        <app-button size="sm" class="active:scale-95 transition-transform" (onClick)="openCreateModal()">+ Initialize New Session</app-button>
+                        <app-button size="sm" class="active:scale-95 transition-transform" (onClick)="openCreateModal()">+ Create session</app-button>
                       </div>
                     </td>
                   </tr>
@@ -182,29 +188,33 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
       @if (hasMore()) {
         <div class="flex-shrink-0 flex justify-center pt-6">
           <app-button variant="secondary" size="sm" [disabled]="isLoading()" (onClick)="loadMore()" class="active:scale-95 transition-transform">
-            {{ isLoading() ? 'Loading...' : 'Fetch More Data' }}
+            {{ isLoading() ? 'Loading...' : 'Load more sessions' }}
           </app-button>
         </div>
       }
 
       <app-modal 
         [isOpen]="isModalOpen()" 
-        title="Initialize New Session" 
+        title="Create session" 
         (close)="isModalOpen.set(false)"
       >
         <div class="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+          @if (createError()) {
+            <p role="alert" class="text-[10px] font-bold text-red-700 dark:text-red-300">{{ createError() }}</p>
+          }
+
           <!-- Metadata Reuse Section - Refined hierarchy -->
           <div class="p-3 border-2 border-black dark:border-white space-y-3 bg-gray-50 dark:bg-gray-800/20">
             <div class="flex justify-between items-center border-b border-black/10 dark:border-white/10 pb-1.5">
-              <label class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 leading-none">Template Protocol</label>
+              <label class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 leading-none">Use previous session details</label>
               @if (selectedTemplate()) {
-                <button (click)="clearTemplate()" class="text-[9px] font-black text-red-500 hover:underline uppercase transition-all active:scale-90">Abort Reuse</button>
+                <button (click)="clearTemplate()" class="text-[9px] font-black text-red-500 hover:underline uppercase transition-all active:scale-90">Clear</button>
               }
             </div>
             
             @if (!selectedTemplate()) {
               <app-input 
-                placeholder="Search historical manifest..." 
+                placeholder="Search past sessions..." 
                 [value]="templateSearchQuery()"
                 (valueChange)="onTemplateSearch($event)"
                 class="!mb-0 !text-[10px]"
@@ -224,42 +234,42 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
               }
             } @else {
               <div class="flex items-center justify-between bg-black text-white dark:bg-white dark:text-black px-2 py-1.5 text-[10px] font-black uppercase animate-in zoom-in-95 duration-200">
-                <span class="truncate">Active: {{ selectedTemplate().title }}</span>
-                <span class="text-[8px] font-mono opacity-70">LOCKED</span>
+                <span class="truncate">Using: {{ selectedTemplate().title }}</span>
+                <span class="text-[8px] font-mono opacity-70">Template active</span>
               </div>
             }
           </div>
 
           <app-input 
-            label="Session Identifier" 
+            label="Session title" 
             placeholder="Navigation Audit" 
             [value]="newSession().title"
             (valueChange)="updateNewSession('title', $event)"
           />
           <div class="space-y-1">
             <app-input 
-              label="Mission Charter" 
+              label="Charter" 
               type="textarea"
-              placeholder="Define goal and approach parameters..." 
+              placeholder="Describe what this session should cover..." 
               [value]="newSession().charter"
               (valueChange)="updateNewSession('charter', $event)"
             />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <app-input 
-              label="Target Unit" 
+              label="Machine" 
               placeholder="Test-VM-01" 
               [value]="newSession().machine_name"
               (valueChange)="updateNewSession('machine_name', $event)"
             />
             <div>
-              <label class="block text-xs font-black uppercase tracking-widest text-gray-900 dark:text-gray-100 mb-1.5">SW Version</label>
+              <label class="block text-xs font-black uppercase tracking-widest text-gray-900 dark:text-gray-100 mb-1.5">Software version</label>
               <select
                 [value]="newSession().software_version"
                 (change)="updateNewSession('software_version', $any($event.target).value)"
                 class="w-full px-3 py-2 min-h-11 bg-white dark:bg-gray-900 border-2 border-gray-900 dark:border-gray-100 rounded-none focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white focus:bg-gray-50 dark:focus:bg-gray-800 dark:text-white sm:text-sm transition-all"
               >
-                <option value="" disabled>Select version</option>
+                <option value="" disabled>Select a version</option>
                 @for (v of availableVersions(); track v) {
                   <option [value]="v">{{ v }}</option>
                 }
@@ -267,15 +277,15 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap, of } from 'rxjs
             </div>
           </div>
           <app-input 
-            label="Timebox (Min)" 
+            label="Timebox (minutes)" 
             type="number"
             [value]="newSession().duration_minutes.toString()"
             (valueChange)="updateNewSession('duration_minutes', $event)"
           />
         </div>
         <div footer class="flex justify-end gap-3">
-          <app-button variant="secondary" (onClick)="isModalOpen.set(false)" class="active:scale-95 transition-transform">Abort</app-button>
-          <app-button [disabled]="!isValid()" (onClick)="createSession()" class="active:scale-95 transition-transform">Execute</app-button>
+          <app-button variant="secondary" (onClick)="isModalOpen.set(false)" class="active:scale-95 transition-transform">Cancel</app-button>
+          <app-button [disabled]="!isValid()" (onClick)="createSession()" class="active:scale-95 transition-transform">Create session</app-button>
         </div>
       </app-modal>
     </div>
@@ -319,6 +329,8 @@ export class SessionListComponent implements OnInit {
   sortOrder = signal<'ASC' | 'DESC'>('DESC');
   isLoading = signal(false);
   hasMore = signal(false);
+  listError = signal('');
+  createError = signal('');
 
   currentLatestVersion = computed(() => {
     if (this.availableVersions().length === 0) return null;
@@ -355,13 +367,17 @@ export class SessionListComponent implements OnInit {
   }
 
   loadVersions() {
-    this.api.getVersions().subscribe(versions => {
-      this.availableVersions.set(versions);
-      
-      // Validate stored version
-      const stored = this.selectedVersion();
-      if (stored && !versions.includes(stored)) {
-        this.onVersionChange(''); // Reset if version no longer exists
+    this.api.getVersions().subscribe({
+      next: (versions) => {
+        this.availableVersions.set(versions);
+
+        const stored = this.selectedVersion();
+        if (stored && !versions.includes(stored)) {
+          this.onVersionChange('');
+        }
+      },
+      error: () => {
+        this.listError.set('Could not load versions. Refresh and try again.');
       }
     });
   }
@@ -423,19 +439,27 @@ export class SessionListComponent implements OnInit {
 
   loadSessions() {
     this.isLoading.set(true);
+    this.listError.set('');
+
     this.api.getSessions(
-      this.searchQuery(), 
-      this.limit, 
-      this.offset(), 
-      this.sortBy(), 
+      this.searchQuery(),
+      this.limit,
+      this.offset(),
+      this.sortBy(),
       this.sortOrder(),
       this.selectedVersion() || undefined
-    ).subscribe(res => {
-      const current = this.sessions();
-      this.sessions.set([...current, ...res.sessions]);
-      this.total.set(res.pagination.total);
-      this.hasMore.set(this.sessions().length < res.pagination.total);
-      this.isLoading.set(false);
+    ).subscribe({
+      next: (res) => {
+        const current = this.sessions();
+        this.sessions.set([...current, ...res.sessions]);
+        this.total.set(res.pagination.total);
+        this.hasMore.set(this.sessions().length < res.pagination.total);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.listError.set(err.error?.error || 'Could not load sessions. Check your connection and try again.');
+      }
     });
   }
 
@@ -453,6 +477,7 @@ export class SessionListComponent implements OnInit {
       machine_name: '',
       duration_minutes: 60,
     });
+    this.createError.set('');
     this.selectedTemplate.set(null);
     this.templateSearchQuery.set('');
     this.historicalSessions.set([]);
@@ -472,14 +497,16 @@ export class SessionListComponent implements OnInit {
   }
 
   createSession() {
+    this.createError.set('');
+
     this.api.createSession(this.newSession()).subscribe({
       next: () => {
         this.isModalOpen.set(false);
-        this.loadVersions(); // Refresh versions list in case new one was added
+        this.loadVersions();
         this.resetAndLoad();
       },
       error: (err) => {
-        alert(err.error?.error || 'Failed to create session');
+        this.createError.set(err.error?.error || 'Could not create session. Check the form and try again.');
       }
     });
   }

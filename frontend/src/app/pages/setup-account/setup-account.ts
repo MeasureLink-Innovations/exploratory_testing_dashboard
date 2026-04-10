@@ -18,20 +18,20 @@ import { CardComponent } from '../../components/card/card';
             Account Setup
           </h1>
           <p class="text-xs font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-            Personalize your operator credentials to complete system entry.
+            Set your account details to finish first-time setup.
           </p>
         </div>
 
         <form (submit)="onSubmit($event)" class="space-y-4">
           <app-input
-            label="Operator Username"
+            label="Username"
             placeholder="e.g. j_doe"
             [value]="username()"
             (valueChange)="username.set($event)"
           />
 
           <app-input
-            label="Internal Email"
+            label="Email"
             type="email"
             placeholder="operator@system.internal"
             [value]="email()"
@@ -40,7 +40,7 @@ import { CardComponent } from '../../components/card/card';
 
           <div class="pt-2 border-t border-black/5">
             <app-input
-              label="New Access Key"
+              label="New password"
               type="password"
               placeholder="••••••••"
               [value]="password()"
@@ -48,7 +48,7 @@ import { CardComponent } from '../../components/card/card';
             />
 
             <app-input
-              label="Confirm Access Key"
+              label="Confirm password"
               type="password"
               placeholder="••••••••"
               [value]="confirmPassword()"
@@ -68,14 +68,14 @@ import { CardComponent } from '../../components/card/card';
               class="w-full"
               [disabled]="isLoading()"
             >
-              {{ isLoading() ? 'SYNCHRONIZING...' : 'FINALIZE_SETUP' }}
+              {{ isLoading() ? 'Saving...' : 'Finish setup' }}
             </app-button>
           </div>
         </form>
 
         <div class="mt-8 pt-6 border-t border-black/5 flex justify-between items-center opacity-30">
-          <span class="text-[8px] font-mono text-gray-400">STATE: PENDING_INITIALIZATION</span>
-          <span class="text-[8px] font-mono text-gray-400">SECURITY: FORCED_RESET</span>
+          <span class="text-[8px] font-mono text-gray-400">First-time setup</span>
+          <span class="text-[8px] font-mono text-gray-400">Password reset required</span>
         </div>
       </app-card>
     </div>
@@ -96,12 +96,12 @@ export class AccountSetupComponent {
     event.preventDefault();
     
     if (!this.username() || !this.email() || !this.password()) {
-      this.error.set('All fields are mandatory');
+      this.error.set('Fill in all fields to continue.');
       return;
     }
 
     if (this.password() !== this.confirmPassword()) {
-      this.error.set('Keys do not match');
+      this.error.set('Passwords do not match.');
       return;
     }
 
@@ -117,7 +117,7 @@ export class AccountSetupComponent {
         this.router.navigate(['/sessions']);
       },
       error: (err) => {
-        this.error.set(err.error?.error || 'Setup Failed');
+        this.error.set(err.error?.error || 'Setup failed. Please review your details and try again.');
         this.isLoading.set(false);
       }
     });
