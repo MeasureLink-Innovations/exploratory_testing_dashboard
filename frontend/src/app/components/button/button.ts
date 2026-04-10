@@ -8,7 +8,7 @@ import { Component, input, output } from '@angular/core';
       [type]="type()"
       [disabled]="disabled()"
       (click)="onClick.emit($event)"
-      [class]="'px-4 py-2 font-bold uppercase tracking-tight transition-all focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed e-ink-button ' + variantClasses()"
+      [class]="'font-bold uppercase tracking-tight transition-all focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white disabled:opacity-30 disabled:cursor-not-allowed e-ink-button ' + sizeClasses() + ' ' + variantClasses()"
     >
       <ng-content></ng-content>
     </button>
@@ -20,6 +20,14 @@ export class ButtonComponent {
   variant = input<'primary' | 'secondary' | 'danger' | 'ghost'>('primary');
   size = input<'sm' | 'md' | 'lg'>('md');
   onClick = output<MouseEvent>();
+
+  sizeClasses() {
+    switch (this.size()) {
+      case 'sm': return 'px-3 py-2 text-[10px] min-h-10';
+      case 'lg': return 'px-5 py-3 text-sm min-h-12';
+      default: return 'px-4 py-2 text-xs min-h-11';
+    }
+  }
 
   variantClasses() {
     switch (this.variant()) {

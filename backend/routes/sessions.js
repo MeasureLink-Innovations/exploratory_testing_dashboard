@@ -3,25 +3,26 @@ const router = express.Router();
 const db = require('../db');
 const authMiddleware = require('../middleware/auth.middleware');
 
-const VERSION_REGEX = /^v?\d+\.\d+\.\d+$/;
-
-function isValidVersion(version) {
-  if (!version) return true; // Allow null/empty
-  return VERSION_REGEX.test(version);
-}
-
 // Apply auth middleware to all routes in this router
 router.use(authMiddleware);
+
+async function isSelectableVersion(version) {
+  const result = await db.query(
+    'SELECT 1 FROM test_object_versions WHERE version = $1 LIMIT 1',
+    [version]
+  );
+  return result.rows.length > 0;
+}
 
 // List all sessions (with search, pagination, sorting, and version filtering)
 router.get('/', async (req, res, next) => {
   try {
     const { search, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC', versionFilter } = req.query;
-    
+
     // Whitelist for allowed sorting columns
     const allowedColumns = ['title', 'status', 'machine_name', 'software_version', 'created_at', 'duration_minutes'];
     const safeSortOrder = ['ASC', 'DESC'].includes(sortOrder?.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
-    
+
     let orderByClause = '';
     if (sortBy && allowedColumns.includes(sortBy)) {
       orderByClause = `ORDER BY ${sortBy} ${safeSortOrder}`;
@@ -29,7 +30,6 @@ router.get('/', async (req, res, next) => {
         orderByClause += ', created_at DESC';
       }
     } else {
-      // Default sorting: latest version first, then latest creation date
       orderByClause = 'ORDER BY software_version DESC NULLS LAST, created_at DESC';
     }
 
@@ -45,7 +45,7 @@ router.get('/', async (req, res, next) => {
     }
 
     if (versionFilter) {
-      whereClauses.push(`(s.software_version = $${paramIdx} OR s.software_version IS NULL)`);
+      whereClauses.push(`s.software_version = $${paramIdx}`);
       params.push(versionFilter);
       paramIdx++;
     }
@@ -55,12 +55,11 @@ router.get('/', async (req, res, next) => {
     }
 
     query += ` ${orderByClause} LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
-    params.push(parseInt(limit), parseInt(offset));
+    params.push(parseInt(limit, 10), parseInt(offset, 10));
 
     const result = await db.query(query, params);
-    const totalCount = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
-    
-    // Clean up response objects to remove the total_count from each row
+    const totalCount = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+
     const sessions = result.rows.map(row => {
       const { total_count, ...session } = row;
       return session;
@@ -70,8 +69,8 @@ router.get('/', async (req, res, next) => {
       sessions,
       pagination: {
         total: totalCount,
-        limit: parseInt(limit),
-        offset: parseInt(offset)
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10)
       }
     });
   } catch (err) {
@@ -79,13 +78,13 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Get unique versions
-router.get('/versions', async (req, res, next) => {
+// Get selectable versions as plain strings
+router.get('/versions', async (_req, res, next) => {
   try {
     const result = await db.query(
-      'SELECT DISTINCT software_version FROM sessions WHERE software_version IS NOT NULL ORDER BY software_version DESC'
+      'SELECT version FROM test_object_versions ORDER BY version DESC'
     );
-    const versions = result.rows.map(row => row.software_version);
+    const versions = result.rows.map(row => row.version);
     res.json(versions);
   } catch (err) {
     next(err);
@@ -97,17 +96,16 @@ router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const sessionResult = await db.query(`
-      SELECT s.*, u.username as creator_name 
-      FROM sessions s 
-      LEFT JOIN users u ON s.user_id = u.id 
+      SELECT s.*, u.username as creator_name
+      FROM sessions s
+      LEFT JOIN users u ON s.user_id = u.id
       WHERE s.id = $1
     `, [id]);
-    
+
     if (sessionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
-    
-    // Get logs with their linked artifacts and user attribution
+
     const logsResult = await db.query(`
       SELECT l.id, l.session_id, l.timestamp, l.content, l.category, l.author, l.created_at, l.user_id, u.username as logger_name,
       COALESCE(
@@ -126,7 +124,7 @@ router.get('/:id', async (req, res, next) => {
     `, [id]);
 
     const artifactsResult = await db.query('SELECT id, session_id, name, type, metadata, created_at FROM artifacts WHERE session_id = $1', [id]);
-    
+
     res.json({
       ...sessionResult.rows[0],
       logs: logsResult.rows,
@@ -142,9 +140,14 @@ router.post('/', async (req, res, next) => {
   try {
     const { title, mission, charter, machine_name, software_version, duration_minutes } = req.body;
     const userId = req.user.id;
-    
-    if (software_version && !isValidVersion(software_version)) {
-      return res.status(400).json({ error: 'Invalid software version format. Use vX.Y.Z or X.Y.Z' });
+
+    if (!software_version) {
+      return res.status(400).json({ error: 'Software version is required and must be selected from allowed versions' });
+    }
+
+    const allowed = await isSelectableVersion(software_version);
+    if (!allowed) {
+      return res.status(400).json({ error: 'Software version must be selected from allowed versions' });
     }
 
     const result = await db.query(
@@ -162,38 +165,39 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, machine_name, software_version, title, mission, charter, start_time, end_time, duration_minutes, debrief_summary } = req.body;
-    
-    if (software_version && !isValidVersion(software_version)) {
-      return res.status(400).json({ error: 'Invalid software version format. Use vX.Y.Z or X.Y.Z' });
+
+    if (software_version !== undefined) {
+      if (!software_version) {
+        return res.status(400).json({ error: 'Software version is required and must be selected from allowed versions' });
+      }
+      const allowed = await isSelectableVersion(software_version);
+      if (!allowed) {
+        return res.status(400).json({ error: 'Software version must be selected from allowed versions' });
+      }
     }
 
-    // Fetch current session to check status
     const currentResult = await db.query('SELECT * FROM sessions WHERE id = $1', [id]);
     if (currentResult.rows.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
     const current = currentResult.rows[0];
 
-    // If session is already completed, prevent any updates
     if (current.status === 'completed') {
       return res.status(400).json({ error: 'Cannot modify a completed session' });
     }
 
-    // Build update query dynamically
     const fields = [];
     const values = [];
     let idx = 1;
-    
-    if (status) { 
-      // Validation for status transitions
+
+    if (status) {
       if (status === 'in-progress' && !machine_name && !current.machine_name) {
         return res.status(400).json({ error: 'Machine name is required to start session' });
       }
-      
-      fields.push(`status = $${idx++}`); 
-      values.push(status); 
 
-      // Auto-set times
+      fields.push(`status = $${idx++}`);
+      values.push(status);
+
       if (status === 'in-progress' && !current.start_time) {
         fields.push(`start_time = $${idx++}`);
         values.push(new Date().toISOString());
@@ -213,17 +217,17 @@ router.put('/:id', async (req, res, next) => {
     if (end_time !== undefined) { fields.push(`end_time = $${idx++}`); values.push(end_time); }
     if (duration_minutes !== undefined) { fields.push(`duration_minutes = $${idx++}`); values.push(duration_minutes); }
     if (debrief_summary !== undefined) { fields.push(`debrief_summary = $${idx++}`); values.push(debrief_summary); }
-    
+
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
-    
+
     values.push(id);
     const result = await db.query(
       `UPDATE sessions SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
       values
     );
-    
+
     res.json(result.rows[0]);
   } catch (err) {
     next(err);

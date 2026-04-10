@@ -39,7 +39,15 @@ CREATE TABLE IF NOT EXISTS log_artifacts (
   PRIMARY KEY (log_id, artifact_id)
 );
 
+CREATE TABLE IF NOT EXISTS test_object_versions (
+  id SERIAL PRIMARY KEY,
+  version VARCHAR(255) NOT NULL UNIQUE,
+  created_by INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_logs_session_id ON logs(session_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_session_id ON artifacts(session_id);
 CREATE INDEX IF NOT EXISTS idx_log_artifacts_log_id ON log_artifacts(log_id);
 CREATE INDEX IF NOT EXISTS idx_log_artifacts_artifact_id ON log_artifacts(artifact_id);
+CREATE INDEX IF NOT EXISTS idx_test_object_versions_created_at ON test_object_versions(created_at DESC);

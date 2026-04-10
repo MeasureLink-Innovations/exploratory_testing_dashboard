@@ -43,7 +43,21 @@ export class ApiService {
   }
 
   getVersions(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/sessions/versions`);
+    return this.http.get<any[]>(`${this.apiUrl}/versions`).pipe(
+      map((rows) => rows.map((row) => row.version))
+    );
+  }
+
+  getVersionCatalog(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/versions`);
+  }
+
+  createVersion(version: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/versions`, { version });
+  }
+
+  deleteVersion(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/versions/${id}`);
   }
 
   getSession(id: number): Observable<any> {
