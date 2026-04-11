@@ -14,12 +14,18 @@ import { InputComponent } from '../../components/input/input';
       <div class="flex-shrink-0 flex flex-col lg:flex-row justify-between items-end gap-6 border-b-2 border-black dark:border-white pb-6 mb-8">
         <div class="flex-grow">
           <h2 class="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Operator Registry</h2>
-          <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">System Access Control</p>
+          <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mt-2">Manage user access and roles</p>
         </div>
         
         <div class="flex items-end gap-4">
-          <app-button class="h-9 whitespace-nowrap active:scale-95 transition-transform" (onClick)="openCreateModal()">+ Add New Operator</app-button>
+          <app-button class="h-9 whitespace-nowrap active:scale-95 transition-transform" (onClick)="openCreateModal()">+ Add operator</app-button>
         </div>
+
+        @if (loadError()) {
+          <div class="w-full lg:w-auto border border-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2">
+            <p class="text-[10px] font-bold text-red-700 dark:text-red-300">{{ loadError() }}</p>
+          </div>
+        }
       </div>
 
       <div class="flex-grow overflow-y-auto custom-scrollbar border-2 border-black dark:border-white bg-white dark:bg-gray-900">
@@ -36,8 +42,8 @@ import { InputComponent } from '../../components/input/input';
           <tbody class="divide-y divide-black/10 dark:divide-white/10">
             @for (user of users(); track user.id) {
               <tr class="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                <td class="px-4 py-3 font-mono font-bold">{{ user.username }}</td>
-                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ user.email }}</td>
+                <td class="px-4 py-3 font-mono font-bold truncate max-w-[220px]" [title]="user.username">{{ user.username }}</td>
+                <td class="px-4 py-3 text-gray-500 dark:text-gray-400 truncate max-w-[280px]" [title]="user.email">{{ user.email }}</td>
                 <td class="px-4 py-3 text-center">
                   @if (user.is_admin) {
                     <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-[9px] font-black uppercase ring-1 ring-blue-500/20">Admin</span>
@@ -60,23 +66,31 @@ import { InputComponent } from '../../components/input/input';
       </div>
 
       <!-- Create User Modal -->
-      <app-modal [isOpen]="isModalOpen()" title="Provision New Operator" (close)="isModalOpen.set(false)">
+      <app-modal [isOpen]="isModalOpen()" title="Add operator" (close)="isModalOpen.set(false)">
         <div class="space-y-4">
+          @if (formError()) {
+            <p role="alert" class="text-[10px] font-bold text-red-700 dark:text-red-300">{{ formError() }}</p>
+          }
+
+          @if (formSuccess()) {
+            <p aria-live="polite" class="text-[10px] font-bold text-green-700 dark:text-green-300">{{ formSuccess() }}</p>
+          }
+
           <app-input 
             label="Username" 
-            placeholder="OPERATOR_NAME" 
+            placeholder="operator_name" 
             [value]="newUser().username"
             (valueChange)="updateNewUser('username', $event)"
           />
           <app-input 
-            label="System Email" 
+            label="Email" 
             type="email"
             placeholder="operator@system.internal" 
             [value]="newUser().email"
             (valueChange)="updateNewUser('email', $event)"
           />
           <app-input 
-            label="Initial Access Key" 
+            label="Temporary password" 
             type="password"
             placeholder="••••••••" 
             [value]="newUser().password"
@@ -91,13 +105,15 @@ import { InputComponent } from '../../components/input/input';
               (change)="toggleAdmin($event)"
               class="w-4 h-4 accent-black dark:accent-white"
             >
-            <label for="is_admin" class="text-[10px] font-black uppercase tracking-widest text-gray-500">Elevate to System Administrator</label>
+            <label for="is_admin" class="text-[10px] font-black uppercase tracking-widest text-gray-500">Grant admin access</label>
           </div>
         </div>
         
         <div footer class="flex justify-end gap-3">
-          <app-button variant="secondary" (onClick)="isModalOpen.set(false)">Abort</app-button>
-          <app-button [disabled]="!isValid()" (onClick)="createUser()">Establish Record</app-button>
+          <app-button variant="secondary" (onClick)="isModalOpen.set(false)">Cancel</app-button>
+          <app-button [disabled]="isSubmitting() || !isValid()" (onClick)="createUser()">
+            {{ isSubmitting() ? 'Creating...' : 'Create user' }}
+          </app-button>
         </div>
       </app-modal>
     </div>
@@ -108,7 +124,11 @@ export class AdminDashboardComponent implements OnInit {
   
   users = signal<any[]>([]);
   isModalOpen = signal(false);
-  
+  loadError = signal('');
+  formError = signal('');
+  formSuccess = signal('');
+  isSubmitting = signal(false);
+
   newUser = signal({
     username: '',
     email: '',
@@ -121,11 +141,19 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadUsers() {
-    this.api.getUsers().subscribe(users => this.users.set(users));
+    this.loadError.set('');
+    this.api.getUsers().subscribe({
+      next: (users) => this.users.set(users),
+      error: (err) => {
+        this.loadError.set(err.error?.error || 'Could not load users. Refresh and try again.');
+      }
+    });
   }
 
   openCreateModal() {
     this.newUser.set({ username: '', email: '', password: '', is_admin: false });
+    this.formError.set('');
+    this.formSuccess.set('');
     this.isModalOpen.set(true);
   }
 
@@ -143,12 +171,21 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   createUser() {
+    this.formError.set('');
+    this.formSuccess.set('');
+    this.isSubmitting.set(true);
+
     this.api.createOperator(this.newUser()).subscribe({
       next: () => {
+        this.isSubmitting.set(false);
+        this.formSuccess.set('User created successfully.');
         this.isModalOpen.set(false);
         this.loadUsers();
       },
-      error: (err) => alert(err.error?.error || 'Provisioning failed')
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.formError.set(err.error?.error || 'Could not create user. Check the details and try again.');
+      }
     });
   }
 }

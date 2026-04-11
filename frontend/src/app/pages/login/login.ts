@@ -18,20 +18,20 @@ import { CardComponent } from '../../components/card/card';
             System Login
           </h1>
           <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">
-            Identity_Verification_Protocol
+            Sign in with your username or email.
           </p>
         </div>
 
         <form (submit)="onSubmit($event)" class="space-y-4">
           <app-input
-            label="Identifier (Email or Username)"
-            placeholder="SYSTEM_ID_001"
+            label="Username or email"
+            placeholder="you@example.com"
             [value]="identifier()"
             (valueChange)="identifier.set($event)"
           />
 
           <app-input
-            label="Access Key"
+            label="Password"
             type="password"
             placeholder="••••••••"
             [value]="password()"
@@ -50,14 +50,14 @@ import { CardComponent } from '../../components/card/card';
               class="w-full"
               [disabled]="isLoading()"
             >
-              {{ isLoading() ? 'AUTHENTICATING...' : 'ESTABLISH_SESSION' }}
+              {{ isLoading() ? 'Signing in...' : 'Sign in' }}
             </app-button>
           </div>
         </form>
 
         <div class="mt-8 pt-6 border-t border-black/5 flex justify-between items-center opacity-30">
-          <span class="text-[8px] font-mono text-gray-400">AUTH_LEVEL: RESTRICTED</span>
-          <span class="text-[8px] font-mono text-gray-400">ENCRYPTION: AES-256</span>
+          <span class="text-[8px] font-mono text-gray-400">Secure access</span>
+          <span class="text-[8px] font-mono text-gray-400">Encrypted connection</span>
         </div>
       </app-card>
     </div>
@@ -76,7 +76,7 @@ export class LoginComponent {
   onSubmit(event: Event) {
     event.preventDefault();
     if (!this.identifier() || !this.password()) {
-      this.error.set('Credentials Required');
+      this.error.set('Enter both username/email and password.');
       return;
     }
 
@@ -92,7 +92,7 @@ export class LoginComponent {
         this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
-        this.error.set(err.error?.error || 'Authentication Failed');
+        this.error.set(err.error?.error || 'Sign-in failed. Check your credentials and try again.');
         this.isLoading.set(false);
       }
     });

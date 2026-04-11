@@ -13,7 +13,7 @@ import { ModalComponent } from '../../components/modal/modal';
   standalone: true,
   imports: [CommonModule, RouterLink, ButtonComponent, CardComponent, InputComponent, ModalComponent],
   template: `
-    <div class="flex flex-col h-full max-w-[1600px] mx-auto overflow-hidden px-2 sm:px-6 animate-in fade-in duration-700 ease-out">
+    <div class="w-full flex flex-col min-h-full max-w-[1600px] mx-auto overflow-y-auto px-2 sm:px-6 animate-in fade-in duration-700 ease-out">
     @if (session()) {
       <!-- 1. MISSION CONTROL HEADER (OMNIPRESENT) -->
       <div class="flex-shrink-0 bg-white dark:bg-gray-900 border-b-2 border-black dark:border-white pb-4 pt-3 relative z-[100] space-y-4">
@@ -23,7 +23,7 @@ import { ModalComponent } from '../../components/modal/modal';
           <div class="flex items-center gap-3">
             <a routerLink="/sessions" class="flex items-center gap-1.5 px-2 py-1 border border-black/10 hover:bg-black/5 transition-colors text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2 group">
               <svg class="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-              Manifest
+Sessions
             </a>
             <div class="bg-black text-white dark:bg-white dark:text-black px-2 py-1 font-mono text-lg font-black tracking-tighter shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] animate-in slide-in-from-left-2 duration-500">
               SESS_{{ session()?.id }}
@@ -32,7 +32,7 @@ import { ModalComponent } from '../../components/modal/modal';
               <h2 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none break-words animate-in slide-in-from-left-4 duration-700">
                 {{ session()?.title }}
               </h2>
-              <span class="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30 mt-1">Creator: {{ session()?.creator_name || 'ANONYMOUS' }}</span>
+              <span class="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/30 mt-1">Created by: {{ session()?.creator_name || 'ANONYMOUS' }}</span>
             </div>
           </div>
           
@@ -49,11 +49,11 @@ import { ModalComponent } from '../../components/modal/modal';
             
             <div class="flex bg-white dark:bg-gray-900 border border-black dark:border-white p-0.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
               @if (session()?.status === 'planned') {
-                <app-button size="sm" class="font-bold active:scale-95 transition-transform" (onClick)="openMetaModal()">Begin Session</app-button>
+                <app-button size="sm" class="font-bold active:scale-95 transition-transform" (onClick)="openMetaModal()">Start session</app-button>
               } @else if (session()?.status === 'in-progress') {
-                <app-button variant="danger" size="sm" class="font-bold active:scale-95 transition-transform" (onClick)="moveToDebriefing()">End Logging</app-button>
+                <app-button variant="danger" size="sm" class="font-bold active:scale-95 transition-transform" (onClick)="moveToDebriefing()">Stop logging</app-button>
               } @else if (session()?.status === 'debriefing') {
-                <app-button size="sm" class="font-bold active:scale-95 transition-transform" (onClick)="completeSession()">Finalize Manifest</app-button>
+                <app-button size="sm" class="font-bold active:scale-95 transition-transform" (onClick)="completeSession()">Complete session</app-button>
               }
             </div>
           </div>
@@ -62,22 +62,22 @@ import { ModalComponent } from '../../components/modal/modal';
         <!-- Row 2: Primary Charter (High Visibility) -->
         <div class="flex flex-col md:flex-row gap-4 py-3 px-4 bg-gray-50 dark:bg-gray-800/30 border-x-2 border-y border-black dark:border-white shadow-[inset_4px_0px_0px_0px_rgba(0,0,0,0.1)] transition-all hover:bg-gray-100 dark:hover:bg-gray-800/50 group">
           <div class="flex-grow">
-            <span class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 block mb-1 group-hover:text-black dark:group-hover:text-white transition-colors">Primary Charter Protocol</span>
+            <span class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 block mb-1 group-hover:text-black dark:group-hover:text-white transition-colors">Session charter</span>
             <h3 class="text-lg md:text-xl font-black text-black dark:text-white leading-tight border-l-4 border-black dark:border-white pl-4 py-1">
               {{ session()?.charter }}
             </h3>
           </div>
           <div class="flex flex-row md:flex-col items-start md:items-end justify-between md:justify-center gap-2 md:min-w-[140px] border-t md:border-t-0 md:border-l border-black/10 pt-2 md:pt-0 md:pl-4">
              <div class="flex flex-col items-start md:items-end">
-               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Target_Unit</span>
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Machine</span>
                <span class="text-[11px] font-bold text-black dark:text-white font-mono uppercase bg-black/5 dark:bg-white/5 px-1.5 transition-colors group-hover:bg-black/10 dark:group-hover:bg-white/10">{{ session()?.machine_name || 'UNDEFINED' }}</span>
              </div>
              <div class="flex flex-col items-start md:items-end">
-               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">SW_Version</span>
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Software version</span>
                <span class="text-[11px] font-bold text-black dark:text-white font-mono uppercase bg-black/5 dark:bg-white/5 px-1.5 transition-colors group-hover:bg-black/10 dark:group-hover:bg-white/10">{{ session()?.software_version || 'UNDEFINED' }}</span>
              </div>
              <div class="flex flex-col items-start md:items-end">
-               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Deployment_Date</span>
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Created on</span>
                <span class="text-[11px] font-bold text-gray-400 font-mono">{{ session()?.created_at | date:'yyyy-MM-dd' }}</span>
              </div>
              @if (session()?.status !== 'completed') {
@@ -91,7 +91,7 @@ import { ModalComponent } from '../../components/modal/modal';
           <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-end">
             <div class="flex-grow relative">
               <div class="flex justify-between items-center mb-1">
-                  <label class="text-[10px] font-black uppercase tracking-widest text-black/40">Observation Capture</label>
+                  <label class="text-[10px] font-black uppercase tracking-widest text-black/40">New log entry</label>
                   @if (selectedArtifacts().length > 0) {
                     <div class="flex gap-1">
                       @for (art of selectedArtifacts(); track art.id) {
@@ -105,7 +105,7 @@ import { ModalComponent } from '../../components/modal/modal';
               </div>
               <app-input 
                 type="textarea" 
-                [placeholder]="isCaptureLocked() ? 'Capture Buffer Locked - Session Not Active' : 'What are you seeing? Record notes, findings, or issues in real-time...'" 
+                [placeholder]="isCaptureLocked() ? 'Logging is locked because this session is not active.' : 'Describe what you observed (note, finding, or issue)...'" 
                 [value]="logEntry()"
                 (valueChange)="logEntry.set($event)"
                 [disabled]="isCaptureLocked()"
@@ -123,7 +123,7 @@ import { ModalComponent } from '../../components/modal/modal';
                 <button [disabled]="isCaptureLocked()" (click)="logCategory.set('issue')" [class]="'flex-1 px-2 text-[9px] font-bold uppercase border-l border-black dark:border-white transition-all ' + (logCategory() === 'issue' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5')">Issue</button>
               </div>
               <app-button class="font-black uppercase text-[10px] h-9 active:scale-95 transition-transform" [disabled]="isCaptureLocked() || !logEntry() || isSubmittingLog()" (onClick)="submitLog()">
-                Commit Observation
+Add log entry
               </app-button>
             </div>
           </div>
@@ -131,30 +131,21 @@ import { ModalComponent } from '../../components/modal/modal';
       </div>
 
       <!-- 3. MAIN WORK AREA -->
-      <div class="flex-grow overflow-hidden pt-4 pb-2">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+      <div class="w-full pt-4 pb-6">
+        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           <!-- TIMELINE COLUMN -->
-          <div class="order-2 lg:order-1 lg:col-span-5 h-full flex flex-col min-h-0 relative z-10 pr-2">
+          <div class="w-full order-2 lg:order-1 lg:col-span-5 flex flex-col relative z-10 pr-2">
             
             @if (session()?.status === 'planned') {
-              <div class="mb-6 animate-in zoom-in-95 duration-500 flex-shrink-0">
-                <div class="p-6 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]">
-                  <div class="flex items-start space-x-4">
-                    <div class="flex-shrink-0 p-2 bg-white text-black dark:bg-black dark:text-white rounded-none border border-black dark:border-white animate-pulse-slow">
-                      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
+              <div class="mb-4 animate-in zoom-in-95 duration-500 flex-shrink-0">
+                <div class="p-4 bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <h4 class="text-base font-black uppercase tracking-tight">Ready to start</h4>
+                      <p class="text-[11px] font-medium opacity-90">Set machine and version details, then begin logging.</p>
                     </div>
-                    <div class="space-y-3">
-                      <h4 class="text-lg font-black uppercase tracking-tight">System Ready for Execution</h4>
-                      <p class="text-xs font-medium leading-relaxed opacity-90">
-                        This session is in the **Planned** state. To begin your exploratory audit, you must first designate the unit (machine or environment) under test.
-                      </p>
-                      <div class="pt-2">
-                        <app-button variant="secondary" size="sm" class="font-bold !bg-white !text-black border-black active:scale-95 transition-transform" (onClick)="openMetaModal()">Execute Start Protocol</app-button>
-                      </div>
-                    </div>
+                    <app-button variant="secondary" size="sm" class="font-bold !bg-white !text-black border-black active:scale-95 transition-transform whitespace-nowrap" (onClick)="openMetaModal()">Start session setup</app-button>
                   </div>
                 </div>
               </div>
@@ -162,7 +153,7 @@ import { ModalComponent } from '../../components/modal/modal';
 
             @if (session()?.status === 'debriefing' || session()?.status === 'completed') {
               <div class="mb-6 animate-in slide-in-from-left-4 duration-500 flex-shrink-0">
-                <app-card title="Post-Testing Summary">
+                <app-card title="Debrief summary">
                   @if (session()?.status === 'debriefing') {
                     <div class="space-y-3">
                       <app-input 
@@ -172,18 +163,29 @@ import { ModalComponent } from '../../components/modal/modal';
                         (valueChange)="debriefSummary.set($event)"
                         class="transition-all focus-within:ring-2 focus-within:ring-black dark:focus-within:ring-white"
                       />
+
+                      @if (debriefError()) {
+                        <p role="alert" class="text-[10px] font-bold text-red-700 dark:text-red-300">{{ debriefError() }}</p>
+                      }
+
+                      @if (debriefSavedMessage()) {
+                        <p aria-live="polite" class="text-[10px] font-bold text-green-700 dark:text-green-300">{{ debriefSavedMessage() }}</p>
+                      }
+
                       <div class="flex justify-end">
-                        <app-button class="font-bold active:scale-95 transition-transform" (onClick)="saveDebriefSummary()">Save Report</app-button>
+                        <app-button [disabled]="isSavingDebrief()" class="font-bold active:scale-95 transition-transform" (onClick)="saveDebriefSummary()">
+                          {{ isSavingDebrief() ? 'Saving...' : 'Save summary' }}
+                        </app-button>
                       </div>
                     </div>
                   } @else {
-                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap leading-relaxed">{{ session()?.debrief_summary || 'No report filed.' }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap leading-relaxed">{{ session()?.debrief_summary || 'No summary added yet.' }}</p>
                   }
                 </app-card>
               </div>
             }
 
-            <app-card title="Execution Log" class="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both flex-grow min-h-0" contentClass="flex flex-col h-full">
+            <app-card title="Session log" class="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both min-h-[12rem]" contentClass="flex flex-col h-full">
               <div header-actions>
                 <button 
                   (click)="toggleLogSort()" 
@@ -200,7 +202,7 @@ import { ModalComponent } from '../../components/modal/modal';
                 </button>
               </div>
               <div class="flow-root overflow-y-auto custom-scrollbar flex-grow min-h-0 pr-2">
-                <ul role="list" class="-mb-8">
+                <ul role="list" class="pb-2">
                   @for (log of sortedLogs(); track log.id; let last = $last; let i = $index) {
                     <li class="animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both" [style.animation-delay]="(i * 50) + 'ms'">
                       <div class="relative pb-8">
@@ -256,9 +258,9 @@ import { ModalComponent } from '../../components/modal/modal';
           </div>
 
           <!-- TOOLBELT COLUMN (Artifacts & Evidence) -->
-          <div class="order-1 lg:order-2 lg:col-span-7 h-full flex flex-col min-h-0 relative z-30 animate-in fade-in slide-in-from-right-4 duration-700 delay-300 fill-mode-both">
-            <div class="flex-grow overflow-hidden flex flex-col min-h-0">
-              <app-card title="Artifact Evidence Pool" class="h-full flex-grow" contentClass="flex flex-col h-full">
+          <div class="w-full order-1 lg:order-2 lg:col-span-7 flex flex-col relative z-30 animate-in fade-in slide-in-from-right-4 duration-700 delay-300 fill-mode-both">
+            <div class="flex flex-col">
+              <app-card title="Artifacts" class="h-full flex-grow" contentClass="flex flex-col h-full">
                 <div class="flex flex-col h-full space-y-4">
                   <div class="flex justify-between items-center flex-shrink-0">
                     <div class="flex gap-1.5">
@@ -299,11 +301,11 @@ import { ModalComponent } from '../../components/modal/modal';
                         </div>
 
                         @if (getLinkedLogsForArtifact(art.id).length > 0) {
-                          <div class="absolute -top-1.5 -left-1.5 bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 text-[8px] font-black ring-1 ring-white shadow-sm animate-in zoom-in-75 duration-300">Cited</div>
+                          <div class="absolute -top-1.5 -left-1.5 bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 text-[8px] font-black ring-1 ring-white shadow-sm animate-in zoom-in-75 duration-300">Linked</div>
                         }
                       </div>
                     } @empty {
-                      <p class="col-span-full text-center text-gray-400 text-xs font-bold uppercase py-12 animate-in fade-in duration-1000">Buffer Empty</p>
+                      <p class="col-span-full text-center text-gray-400 text-xs font-bold uppercase py-12 animate-in fade-in duration-1000">No artifacts uploaded yet</p>
                     }
                   </div>
                 </div>
@@ -314,7 +316,7 @@ import { ModalComponent } from '../../components/modal/modal';
       </div>
     } @else {
       <div class="flex justify-center py-40">
-        <span class="text-sm font-black uppercase tracking-[0.4em] animate-pulse">Initializing Manifest...</span>
+        <span class="text-sm font-black uppercase tracking-[0.4em] animate-pulse">Loading session...</span>
       </div>
     }
 
@@ -346,9 +348,9 @@ import { ModalComponent } from '../../components/modal/modal';
         </div>
       </div>
       <div footer class="flex justify-end gap-3">
-        <app-button variant="secondary" class="font-bold active:scale-95 transition-transform" (onClick)="isMetaModalOpen.set(false)">Abort</app-button>
+        <app-button variant="secondary" class="font-bold active:scale-95 transition-transform" (onClick)="isMetaModalOpen.set(false)">Cancel</app-button>
         <app-button [disabled]="!machineName() || !softwareVersion()" class="font-bold active:scale-95 transition-transform" (onClick)="saveMetadata()">
-          {{ session()?.status === 'planned' ? 'Execute Start' : 'Save Changes' }}
+          {{ session()?.status === 'planned' ? 'Start session' : 'Save changes' }}
         </app-button>
       </div>
     </app-modal>
@@ -356,7 +358,7 @@ import { ModalComponent } from '../../components/modal/modal';
     <!-- Link Artifacts Modal -->
     <app-modal [isOpen]="isLinkModalOpen()" title="Link Artifacts" (close)="isLinkModalOpen.set(false)">
       <div class="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
-        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">[Select Relevant Citations]</p>
+        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Select artifacts to link</p>
         <div class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
           @for (art of artifacts(); track art.id) {
             <div 
@@ -369,8 +371,8 @@ import { ModalComponent } from '../../components/modal/modal';
         </div>
       </div>
       <div footer class="flex justify-end gap-3">
-        <app-button variant="secondary" class="font-bold active:scale-95 transition-transform" (onClick)="isLinkModalOpen.set(false)">Dismiss</app-button>
-        <app-button class="font-bold active:scale-95 transition-transform" (onClick)="linkArtifacts()">Save Citations</app-button>
+        <app-button variant="secondary" class="font-bold active:scale-95 transition-transform" (onClick)="isLinkModalOpen.set(false)">Cancel</app-button>
+        <app-button class="font-bold active:scale-95 transition-transform" (onClick)="linkArtifacts()">Save links</app-button>
       </div>
     </app-modal>
 
@@ -385,24 +387,24 @@ import { ModalComponent } from '../../components/modal/modal';
               {{ previewContent() }}
             } @else {
               <div class="flex justify-center py-12">
-                <span class="animate-pulse font-bold">Fetching Buffer...</span>
+                <span class="animate-pulse font-bold">Loading file preview...</span>
               </div>
             }
           </div>
         } @else {
           <div class="py-20 text-center space-y-6">
             <svg class="h-20 w-20 mx-auto text-gray-200 dark:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <p class="text-gray-400 font-bold uppercase tracking-widest text-[11px]">File type unsupported</p>
-            <app-button class="font-bold active:scale-95 transition-transform" (onClick)="downloadArtifact(previewArtifact())">Download Archive</app-button>
+            <p class="text-gray-400 font-bold uppercase tracking-widest text-[11px]">Preview not available for this file type</p>
+            <app-button class="font-bold active:scale-95 transition-transform" (onClick)="downloadArtifact(previewArtifact())">Download file</app-button>
           </div>
         }
       </div>
       <div footer>
         <div class="flex justify-between items-center w-full">
           <div class="text-[10px] font-bold uppercase text-gray-400">
-            REF:{{ previewArtifact()?.id }}
+File ID: {{ previewArtifact()?.id }}
           </div>
-          <app-button variant="secondary" class="font-bold active:scale-95 transition-transform" (onClick)="isPreviewModalOpen.set(false)">Dismiss</app-button>
+          <app-button variant="secondary" class="font-bold active:scale-95 transition-transform" (onClick)="isPreviewModalOpen.set(false)">Close</app-button>
         </div>
       </div>
     </app-modal>
@@ -443,6 +445,9 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   logEntry = signal('');
   logCategory = signal('note');
   debriefSummary = signal('');
+  debriefSavedMessage = signal('');
+  debriefError = signal('');
+  isSavingDebrief = signal(false);
   isUploading = signal(false);
   isSubmittingLog = signal(false);
   
@@ -472,7 +477,6 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   isPreviewModalOpen = signal(false);
   previewArtifact = signal<any>(null);
   previewContent = signal<string | null>(null);
-  isDebriefingMode = signal(false);
 
   toggleLogSort() {
     this.logSortOrder.set(this.logSortOrder() === 'ASC' ? 'DESC' : 'ASC');
@@ -568,16 +572,30 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
       this.logs.set(session.logs);
       this.artifacts.set(session.artifacts);
       this.debriefSummary.set(session.debrief_summary || '');
-      this.hasMoreLogs.set(false); 
+      this.hasMoreLogs.set(false);
       if (session.machine_name) this.machineName.set(session.machine_name);
       if (session.software_version) this.softwareVersion.set(session.software_version);
     });
   }
 
   saveDebriefSummary() {
+    if (this.isSavingDebrief()) return;
+
     const id = this.session().id;
-    this.api.updateSession(id, { debrief_summary: this.debriefSummary() }).subscribe(updated => {
-      this.session.update(s => ({ ...s, ...updated }));
+    this.debriefSavedMessage.set('');
+    this.debriefError.set('');
+    this.isSavingDebrief.set(true);
+
+    this.api.updateSession(id, { debrief_summary: this.debriefSummary() }).subscribe({
+      next: (updated) => {
+        this.session.update(s => ({ ...s, ...updated }));
+        this.debriefSavedMessage.set('Summary saved.');
+        this.isSavingDebrief.set(false);
+      },
+      error: (err) => {
+        this.debriefError.set(err.error?.error || 'Could not save summary. Please try again.');
+        this.isSavingDebrief.set(false);
+      }
     });
   }
 
