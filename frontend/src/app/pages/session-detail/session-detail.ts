@@ -38,8 +38,15 @@ Sessions
           
           <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
             @if (session()?.status === 'in-progress') {
-              <div class="flex items-center px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black font-mono text-sm border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] animate-heartbeat">
-                <span class="mr-2 opacity-50">EXEC_TIME:</span>{{ timeRemaining() }}
+              <div class="flex flex-col items-start px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black font-mono text-sm border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]" [class.animate-heartbeat]="timerState() === 'warning-1m' || timerState() === 'expired'">
+                <div>
+                  <span class="mr-2 opacity-50">TIME LEFT:</span>{{ timeRemaining() }}
+                </div>
+                <div class="text-[9px] opacity-70">Timebox: {{ session()?.duration_minutes || 60 }} min</div>
+                <label class="mt-1 text-[9px] font-bold flex items-center gap-1">
+                  <input type="checkbox" [checked]="expirySoundEnabled()" (change)="toggleExpirySound($event)" class="w-3.5 h-3.5 accent-black dark:accent-white" />
+                  Sound on expiry
+                </label>
               </div>
             } @else {
               <div class="px-3 py-1 border border-black/20 text-[10px] font-black uppercase tracking-widest text-gray-400 font-mono transition-colors">
@@ -80,6 +87,10 @@ Sessions
                <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Created on</span>
                <span class="text-[11px] font-bold text-gray-400 font-mono">{{ session()?.created_at | date:'yyyy-MM-dd' }}</span>
              </div>
+             <div class="flex flex-col items-start md:items-end">
+               <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Timebox</span>
+               <span class="text-[11px] font-bold text-gray-400 font-mono">{{ session()?.duration_minutes || 60 }} min</span>
+             </div>
              @if (session()?.status !== 'completed') {
                <button (click)="openMetaModal()" class="text-[9px] font-black text-blue-500 hover:underline uppercase mt-1 active:scale-90 transition-transform">Edit Meta</button>
              }
@@ -88,6 +99,32 @@ Sessions
 
         <!-- Row 3: Omnipresent Observation Capture (Permanent for Layout Consistency) -->
         <div class="pt-2 border-t border-black/5 animate-in slide-in-from-top-2 duration-500">
+          @if (session()?.status === 'in-progress' && timerState() === 'warning-5m') {
+            <div class="mb-2 px-3 py-2 border border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 text-[10px] font-bold text-yellow-800 dark:text-yellow-300">
+              Less than 5 minutes remaining in this timebox.
+            </div>
+          }
+
+          @if (session()?.status === 'in-progress' && timerState() === 'warning-1m') {
+            <div class="mb-2 px-3 py-2 border border-yellow-700 bg-yellow-100 dark:bg-yellow-900/30 text-[10px] font-bold text-yellow-900 dark:text-yellow-200">
+              Less than 1 minute remaining. Prepare to end session or extend.
+            </div>
+          }
+
+          @if (session()?.status === 'in-progress' && timerState() === 'expired') {
+            <div class="mb-2 px-3 py-2 border-2 border-red-700 bg-red-50 dark:bg-red-900/25 text-[10px] font-bold text-red-800 dark:text-red-200 flex flex-col md:flex-row md:items-center md:justify-between gap-2 sticky top-0 z-20">
+              <div>
+                Timebox expired. Overtime: {{ overtimeDuration() }}.
+              </div>
+              <div class="flex gap-2">
+                <app-button size="sm" variant="secondary" [disabled]="isExtendingTimebox()" (onClick)="extendTimebox(15)">
+                  {{ isExtendingTimebox() ? 'Extending...' : '+15 min' }}
+                </app-button>
+                <app-button size="sm" variant="danger" (onClick)="moveToDebriefing()">End session now</app-button>
+              </div>
+            </div>
+          }
+
           <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-end">
             <div class="flex-grow relative">
               <div class="flex justify-between items-center mb-1">
@@ -450,6 +487,8 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   isSavingDebrief = signal(false);
   isUploading = signal(false);
   isSubmittingLog = signal(false);
+  isExtendingTimebox = signal(false);
+  expirySoundEnabled = signal(localStorage.getItem('etd_expiry_sound') === '1');
   
   // Selection for linking
   selectedArtifacts = signal<any[]>([]);
@@ -528,23 +567,57 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   // Timer logic
   currentTime = signal(new Date());
   private timerInterval?: any;
+  private lastTimerState: string | null = null;
+
+  remainingMs = computed(() => {
+    const s = this.session();
+    if (!s || s.status !== 'in-progress' || !s.start_time) return 0;
+
+    const start = new Date(s.start_time).getTime();
+    const safeDuration = Number.isFinite(Number(s.duration_minutes)) && Number(s.duration_minutes) > 0
+      ? Number(s.duration_minutes)
+      : 60;
+
+    const durationMs = safeDuration * 60 * 1000;
+    const now = this.currentTime().getTime();
+
+    let remainingMs = start + durationMs - now;
+
+    // Compatibility fallback for legacy timezone-shifted timestamps.
+    if (remainingMs <= 0) {
+      const tzCorrectionMs = -new Date().getTimezoneOffset() * 60 * 1000;
+      const correctedRemaining = start + tzCorrectionMs + durationMs - now;
+      if (correctedRemaining > 0 && correctedRemaining <= durationMs) {
+        remainingMs = correctedRemaining;
+      }
+    }
+
+    return remainingMs;
+  });
+
+  timerState = computed(() => {
+    const r = this.remainingMs();
+    if (r <= 0) return 'expired';
+    if (r <= 60_000) return 'warning-1m';
+    if (r <= 5 * 60_000) return 'warning-5m';
+    return 'normal';
+  });
 
   timeRemaining = computed(() => {
-    const s = this.session();
-    if (!s || s.status !== 'in-progress' || !s.start_time) return '00:00';
-    
-    const start = new Date(s.start_time).getTime();
-    const durationMs = s.duration_minutes * 60 * 1000;
-    const end = start + durationMs;
-    const remainingMs = end - this.currentTime().getTime();
-    
-    if (remainingMs <= 0) return 'TIME EXPIRED';
-    
-    const totalSeconds = Math.floor(remainingMs / 1000);
+    const r = this.remainingMs();
+    if (r <= 0) return 'TIME EXPIRED';
+    const totalSeconds = Math.floor(r / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    
-    return `${seconds < 0 ? '00:00' : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`}`;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  });
+
+  overtimeDuration = computed(() => {
+    const overtimeMs = Math.max(0, -this.remainingMs());
+    const totalSeconds = Math.floor(overtimeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   });
 
   ngOnInit() {
@@ -552,6 +625,14 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     this.loadSession();
     this.timerInterval = setInterval(() => {
       this.currentTime.set(new Date());
+
+      const state = this.timerState();
+      if (this.lastTimerState !== state) {
+        if (state === 'expired' && this.expirySoundEnabled()) {
+          this.playExpirySound();
+        }
+        this.lastTimerState = state;
+      }
     }, 1000);
   }
 
@@ -575,6 +656,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
       this.hasMoreLogs.set(false);
       if (session.machine_name) this.machineName.set(session.machine_name);
       if (session.software_version) this.softwareVersion.set(session.software_version);
+      this.lastTimerState = this.timerState();
     });
   }
 
@@ -645,6 +727,47 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     this.api.updateSession(id, { status: 'completed' }).subscribe(updated => {
       this.session.update(s => ({ ...s, ...updated }));
     });
+  }
+
+  extendTimebox(minutes: number) {
+    if (!this.session() || this.isExtendingTimebox()) return;
+
+    const current = Number(this.session()?.duration_minutes) || 60;
+    const next = current + minutes;
+
+    this.isExtendingTimebox.set(true);
+    this.api.updateSession(this.session().id, { duration_minutes: next }).subscribe({
+      next: (updated) => {
+        this.isExtendingTimebox.set(false);
+        this.session.update(s => ({ ...s, ...updated }));
+      },
+      error: () => {
+        this.isExtendingTimebox.set(false);
+      }
+    });
+  }
+
+  toggleExpirySound(event: any) {
+    const enabled = !!event.target.checked;
+    this.expirySoundEnabled.set(enabled);
+    localStorage.setItem('etd_expiry_sound', enabled ? '1' : '0');
+  }
+
+  private playExpirySound() {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.02;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch {}
   }
 
   submitLog() {

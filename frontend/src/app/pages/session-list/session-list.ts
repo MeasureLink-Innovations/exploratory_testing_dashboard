@@ -485,15 +485,17 @@ export class SessionListComponent implements OnInit {
   }
 
   updateNewSession(field: string, value: string) {
-    this.newSession.update(s => ({ 
-      ...s, 
-      [field]: field === 'duration_minutes' ? parseInt(value) || 0 : value 
+    this.newSession.update(s => ({
+      ...s,
+      [field]: field === 'duration_minutes'
+        ? Math.max(1, parseInt(value || '60', 10) || 60)
+        : value
     }));
   }
 
   isValid() {
     const s = this.newSession();
-    return s.title && s.charter && s.software_version;
+    return s.title && s.charter && s.software_version && s.duration_minutes > 0;
   }
 
   createSession() {

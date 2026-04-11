@@ -150,9 +150,12 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'Software version must be selected from allowed versions' });
     }
 
+    const parsedDuration = Number(duration_minutes);
+    const safeDuration = Number.isFinite(parsedDuration) && parsedDuration > 0 ? Math.floor(parsedDuration) : 60;
+
     const result = await db.query(
       'INSERT INTO sessions (title, mission, charter, machine_name, software_version, duration_minutes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [title, mission, charter, machine_name, software_version, duration_minutes || 60, userId]
+      [title, mission, charter, machine_name, software_version, safeDuration, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -199,12 +202,11 @@ router.put('/:id', async (req, res, next) => {
       values.push(status);
 
       if (status === 'in-progress' && !current.start_time) {
-        fields.push(`start_time = $${idx++}`);
-        values.push(new Date().toISOString());
+        // Store as UTC wall-clock value to avoid timezone drift in TIMESTAMP columns.
+        fields.push(`start_time = (NOW() AT TIME ZONE 'UTC')`);
       }
       if (status === 'debriefing' && !current.end_time) {
-        fields.push(`end_time = $${idx++}`);
-        values.push(new Date().toISOString());
+        fields.push(`end_time = (NOW() AT TIME ZONE 'UTC')`);
       }
     }
 
@@ -215,7 +217,14 @@ router.put('/:id', async (req, res, next) => {
     if (charter !== undefined) { fields.push(`charter = $${idx++}`); values.push(charter); }
     if (start_time !== undefined) { fields.push(`start_time = $${idx++}`); values.push(start_time); }
     if (end_time !== undefined) { fields.push(`end_time = $${idx++}`); values.push(end_time); }
-    if (duration_minutes !== undefined) { fields.push(`duration_minutes = $${idx++}`); values.push(duration_minutes); }
+    if (duration_minutes !== undefined) {
+      const parsedDuration = Number(duration_minutes);
+      if (!Number.isFinite(parsedDuration) || parsedDuration <= 0) {
+        return res.status(400).json({ error: 'Timebox must be a positive number of minutes' });
+      }
+      fields.push(`duration_minutes = $${idx++}`);
+      values.push(Math.floor(parsedDuration));
+    }
     if (debrief_summary !== undefined) { fields.push(`debrief_summary = $${idx++}`); values.push(debrief_summary); }
 
     if (fields.length === 0) {
