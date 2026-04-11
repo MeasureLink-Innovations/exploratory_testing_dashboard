@@ -1,73 +1,146 @@
 # Exploratory Testing Dashboard
 
-A centralized system for managing exploratory testing sessions, following the Xray guide process (**Mission**, **Charter**, **Session**, **Logs**, **Debrief**). This tool allows testers to structure their manual testing, capture real-time notes, and centralize machine-generated artifacts (logs, screenshots) directly in a PostgreSQL database.
+A web application for running structured exploratory testing sessions with evidence capture.
 
-## Key Features
+It follows an Xray-inspired flow (**Mission → Charter → Session → Logs → Debrief**) and keeps session artifacts (screenshots/logs/measurements) tied to findings for auditability.
 
-- **Structured Session Management**: Define missions and charters for every test.
-- **Enhanced Lifecycle**: 
-  - `Planned`: Prepare your test.
-  - `In-Progress`: Real-time logging of notes, findings, and issues.
-  - `Debriefing`: Review the session, upload logs/screenshots, and link them to specific findings.
-  - `Completed`: Finalized record of the testing effort.
-- **Artifact Center**: 
-  - Support for individual file uploads or **Bulk Zip extraction**.
-  - Automatic categorization of artifacts (Screenshots, Logs, Measurements).
-  - **Artifact-to-Log Linkage**: Attach specific screenshots or logs to your findings to provide clear evidence.
-- **Machine Search**: Quickly find previous test sessions by searching for specific `Machine Name` or `Title`.
-- **In-Database Storage**: All binary artifacts are stored as `BYTEA` in PostgreSQL for a completely self-contained data record.
+## What this project provides
 
-## Tech Stack
+- **Session lifecycle management**: planned, in-progress, debriefing, completed
+- **Real-time logging**: notes, findings, issues with author attribution
+- **Evidence management**: upload files individually or via zip extraction
+- **Artifact-to-log linkage**: connect files to specific observations
+- **Search and filtering**: find sessions by title, machine, and version
+- **Machine integration API**: push logs and artifacts from external systems
 
-- **Frontend**: Angular 18+, Tailwind CSS, Lucide-style icons.
-- **Backend**: Node.js, Express.
-- **Database**: PostgreSQL (Relational data + Binary Large Objects).
-- **Processing**: `adm-zip` for server-side Zip extraction.
+## Documentation map
 
-## Getting Started
+- **Quick setup**: this README + [QUICKSTART.md](./QUICKSTART.md)
+- **System architecture + use cases**: [docs/architecture.md](./docs/architecture.md)
+- **Machine push endpoints**: [docs/API.md](./docs/API.md)
+- **Product context**: [PRD.md](./PRD.md)
 
-### Prerequisites
-- Node.js (v18+)
-- PostgreSQL instance
+## Screenshots
 
-### Installation
+### Session archive
+![Session archive showing searchable and filterable test sessions](docs/assets/screenshots/session-archive.png)
 
-1. **Clone the repository**
-2. **Setup Backend**:
-   ```bash
-   cd backend
-   npm install
-   # Configure .env with DATABASE_URL=postgres://user:pass@localhost:5432/exploratory_testing
-   npm run migrate
-   npm start
-   ```
-3. **Setup Frontend**:
-   ```bash
-   cd ../frontend
-   npm install
-   npm start
-   ```
+### Session detail timeline
+![Session detail page with mission context, live timeline, and authored logs](docs/assets/screenshots/session-detail-timeline.png)
 
-## Exploratory Workflow
+### Artifact toolbelt
+![Artifact panel used to upload, filter, preview, and link evidence to logs](docs/assets/screenshots/artifact-toolbelt.png)
 
-1. **Define**: Create a new session with a title, mission, and charter.
-2. **Execute**: Start the session (enter the Machine Name being tested). Log your observations in real-time.
-3. **Capture**: Upload log files or screenshots. If you have a bundle, upload a `.zip` and the system will extract individual files for you.
-4. **Debrief**: Move to the `Debriefing` phase. Click the **Attach** icon on your log entries to link the relevant uploaded artifacts to your findings.
-5. **Finalize**: Move the session to `Completed` once the debrief is finished.
+## Prerequisites
 
-## Machine Integration
+- **Node.js**: v18+
+- **npm**: recent version compatible with Node 18+
+- **PostgreSQL**: local instance (manual setup path)
+- **Docker + Docker Compose** (optional but recommended for first run)
+- **Python 3 + requests** (optional, for `test_push.py` integration script)
 
-Machines under test can push artifacts and log entries directly to a session via the REST API. This is useful for automated test rigs, performance monitors, or error-tracking scripts.
+## Installation and setup
 
-- **API Documentation**: See [docs/API.md](docs/API.md) for full endpoint details.
-- **Python SDK/Example**: Use `test_push.py` as a starting point for integrating your automation scripts.
+### Option A — Docker Compose (recommended)
 
-Example usage:
+From project root:
+
 ```bash
-# Push a log file to session ID 5
-python test_push.py 5 path/to/execution.log
+docker compose up --build
 ```
 
----
-*Created for structured, evidence-based manual exploratory testing.*
+Services:
+- Frontend: `http://localhost:4200`
+- Backend API: `http://localhost:3000`
+- PostgreSQL: `localhost:5432`
+
+To inspect generated bootstrap admin credentials:
+
+```bash
+docker compose logs backend
+```
+
+### Option B — Manual local setup
+
+#### 1) Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env`:
+
+```env
+PORT=3000
+DATABASE_URL=postgres://user:password@localhost:5432/exploratory_testing
+JWT_SECRET=replace-with-a-local-secret
+```
+
+Run migrations and start API:
+
+```bash
+npm run migrate
+npm run dev
+```
+
+Optional one-time admin bootstrap:
+
+```bash
+node scripts/bootstrap-admin.js
+```
+
+#### 2) Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Open `http://localhost:4200`.
+
+## Day-to-day development workflow
+
+From repository root unless noted.
+
+| Goal | Command |
+|---|---|
+| Run Playwright tests | `npm test` |
+| Run backend (dev) | `cd backend && npm run dev` |
+| Run backend (prod-like) | `cd backend && npm start` |
+| Run backend migrations | `cd backend && npm run migrate` |
+| Run frontend | `cd frontend && npm start` |
+| Build frontend | `cd frontend && npm run build` |
+| Watch frontend build | `cd frontend && npm run watch` |
+| Start full stack in containers | `docker compose up --build` |
+
+### Troubleshooting
+
+- **Frontend can’t reach API**: verify backend is running on `:3000` and `frontend/src/app/services/api.ts` uses the expected base URL.
+- **Database errors during backend startup**: verify `DATABASE_URL` and ensure `exploratory_testing` DB exists.
+- **Login issues for first admin**: run `node scripts/bootstrap-admin.js` (manual) or inspect backend container logs (Docker).
+- **No test scripts for backend package**: this is expected currently (`backend/package.json` has placeholder test script).
+
+## Core use cases
+
+Detailed flow mapping lives in [docs/architecture.md](./docs/architecture.md#use-cases).
+
+- Create and execute a time-boxed exploratory session
+- Debrief with linked evidence and summary
+- Push machine-generated artifacts/logs into active sessions
+- Review attribution for session and log authors in dashboard views
+
+## Contributing
+
+1. Create a branch from `main`.
+2. Keep changes scoped and include rationale in PR description.
+3. If you change user-visible behavior, update docs and screenshots in the same PR.
+4. Validate commands in README/architecture docs before requesting review.
+
+Recommended PR checklist:
+
+- [ ] Commands in docs were executed or validated against scripts/tooling
+- [ ] Related use-case section is updated
+- [ ] Screenshot references are valid and include alt text
+- [ ] No broken local markdown links
