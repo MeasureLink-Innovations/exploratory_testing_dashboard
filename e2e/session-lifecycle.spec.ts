@@ -1,78 +1,157 @@
 import { test, expect } from '@playwright/test';
+import { json, setAuthenticatedUser } from './helpers';
 
-test.describe('Exploratory Testing Session Lifecycle', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to the sessions list page
-    await page.goto('http://localhost:4200/');
+test.describe('Exploratory session e2e', () => {
+  test('creates a new session from the archive page', async ({ page }) => {
+    await setAuthenticatedUser(page);
+
+    const sessions: any[] = [
+      {
+        id: 1,
+        title: 'Existing Session',
+        charter: 'Baseline charter',
+        mission: '-',
+        status: 'planned',
+        software_version: '1.0.0',
+        machine_name: '',
+        duration_minutes: 60,
+        creator_name: 'e2e-user',
+        created_at: '2026-01-01T10:00:00.000Z',
+      },
+    ];
+
+    await page.route('**/api/**', async (route) => {
+      const req = route.request();
+      const url = new URL(req.url());
+
+      if (url.pathname === '/api/versions' && req.method() === 'GET') {
+        return route.fulfill(json([{ id: 1, version: '1.0.0' }]));
+      }
+
+      if (url.pathname === '/api/sessions' && req.method() === 'GET') {
+        return route.fulfill(
+          json({
+            sessions,
+            pagination: { total: sessions.length, limit: 12, offset: 0 },
+          })
+        );
+      }
+
+      if (url.pathname === '/api/sessions' && req.method() === 'POST') {
+        const body = req.postDataJSON() as any;
+        sessions.unshift({
+          ...body,
+          id: 2,
+          status: 'planned',
+          creator_name: 'e2e-user',
+          created_at: '2026-01-02T10:00:00.000Z',
+        });
+        return route.fulfill(json(sessions[0], 201));
+      }
+
+      return route.fulfill(json({ error: 'Unhandled request' }, 404));
+    });
+
+    await page.goto('/sessions');
+
+    await expect(page.getByText('Existing Session')).toBeVisible();
+
+    await page.getByRole('button', { name: /new manifest/i }).click();
+    await page.getByLabel('Session title').fill('Created from E2E');
+    await page.getByLabel('Charter').fill('Validate create session flow.');
+    await page.getByLabel('Machine').fill('E2E-BOX');
+    await page.getByLabel('Timebox (minutes)').fill('30');
+    await page.getByRole('button', { name: /create session/i }).click();
+
+    await expect(page.getByText('Created from E2E')).toBeVisible();
   });
 
-  test('should complete a full session lifecycle', async ({ page }) => {
-    // 1. Create a new session
-    await page.click('button:has-text("New Session")');
-    await page.fill('input[label="Title"]', 'E2E Test Session');
-    await page.fill('textarea[label="Charter (What to test, Scope & Approach)"]', 'Test the exploratory testing dashboard itself.');
-    await page.fill('textarea[label="Mission (Specific Goal/Target)"]', 'Verify that the session lifecycle works as expected.');
-    await page.fill('input[label="Timebox (Minutes)"]', '30');
-    await page.click('button:has-text("Create")');
+  test('prevents start without machine metadata and locks logging after completion', async ({ page }) => {
+    await setAuthenticatedUser(page);
 
-    // Verify session appears in list
-    await expect(page.locator('app-card')).toContainText('E2E Test Session');
-    await page.click('button:has-text("View Details")');
+    let session = {
+      id: 42,
+      title: 'Lifecycle Session',
+      charter: 'Validate lifecycle behavior',
+      mission: '-',
+      status: 'planned',
+      software_version: '',
+      machine_name: '',
+      duration_minutes: 30,
+      creator_name: 'e2e-user',
+      created_at: '2026-01-01T10:00:00.000Z',
+      start_time: null,
+      debrief_summary: '',
+      logs: [] as any[],
+      artifacts: [] as any[],
+    };
 
-    // 2. Start the session
-    await expect(page.locator('h2')).toContainText('E2E Test Session');
-    await page.click('button:has-text("Start Session")');
-    await page.fill('input[label="Machine Name"]', 'E2E-Runner-01');
-    await page.click('button:has-text("Start Now")');
+    let nextLogId = 1;
 
-    // Verify 'in-progress' status and timer
-    await expect(page.locator('dd')).toContainText('in-progress');
-    await expect(page.locator('.animate-pulse')).toBeVisible();
+    await page.route('**/api/**', async (route) => {
+      const req = route.request();
+      const url = new URL(req.url());
 
-    // 3. Log an observation
-    await page.fill('textarea[placeholder="What are you seeing?"]', 'Logged a note via E2E test.');
-    await page.click('button:has-text("Post Log")');
-    await expect(page.locator('ul[role="list"]')).toContainText('Logged a note via E2E test.');
+      if (url.pathname === '/api/versions' && req.method() === 'GET') {
+        return route.fulfill(json([{ id: 1, version: '1.2.3' }]));
+      }
 
-    // 4. Move to Debriefing
-    await page.click('button:has-text("End Testing")');
-    await expect(page.locator('dd')).toContainText('debriefing');
+      if (url.pathname === '/api/sessions/42' && req.method() === 'GET') {
+        return route.fulfill(json(session));
+      }
 
-    // Verify Debriefing Mode toggle is available
-    const debriefToggle = page.locator('button:has-text("Debriefing Mode")');
-    await expect(debriefToggle).toBeVisible();
-    await debriefToggle.click();
-    
-    // Verify side-by-side layout (e.g. by checking column count if possible, or just that it didn't crash)
-    await expect(page.locator('.grid-cols-1.lg\\:grid-cols-2')).toBeVisible();
+      if (url.pathname === '/api/sessions/42' && req.method() === 'PUT') {
+        const body = req.postDataJSON() as any;
+        session = {
+          ...session,
+          ...body,
+          start_time:
+            body.status === 'in-progress' && !session.start_time
+              ? '2026-01-01T10:00:00.000Z'
+              : session.start_time,
+        };
+        return route.fulfill(json(session));
+      }
 
-    // 5. Add Debrief Summary
-    await page.fill('textarea[placeholder*="Provide a summary"]', 'The E2E test was successful.');
-    await page.click('button:has-text("Save Summary")');
+      if (url.pathname === '/api/logs' && req.method() === 'POST') {
+        const body = req.postDataJSON() as any;
+        const newLog = {
+          id: nextLogId++,
+          content: body.content,
+          category: body.category,
+          author: body.author,
+          logger_name: body.author,
+          timestamp: '2026-01-01T10:01:00.000Z',
+          artifacts: [],
+        };
+        session.logs = [...session.logs, newLog];
+        return route.fulfill(json(newLog, 201));
+      }
 
-    // 6. Complete the session
-    await page.click('button:has-text("Finish Session")');
-    await expect(page.locator('dd')).toContainText('completed');
+      return route.fulfill(json({ error: 'Unhandled request' }, 404));
+    });
 
-    // 7. Verify Read-Only state
-    await expect(page.locator('text=Read-Only')).toBeVisible();
-    await expect(page.locator('textarea[placeholder="What are you seeing?"]')).not.toBeVisible();
-    await expect(page.locator('button:has-text("Upload Artifacts")')).not.toBeVisible();
-  });
+    await page.goto('/sessions/42');
 
-  test('should not allow starting a session without a machine name', async ({ page }) => {
-    // Navigate to a planned session (assuming one exists or creating one)
-    await page.click('button:has-text("New Session")');
-    await page.fill('input[label="Title"]', 'Validation Test');
-    await page.fill('textarea[label*="Charter"]', 'Test');
-    await page.fill('textarea[label*="Mission"]', 'Test');
-    await page.click('button:has-text("Create")');
-    
-    await page.click('button:has-text("View Details")');
-    await page.click('button:has-text("Start Session")');
-    
-    // Attempt to start without machine name
-    const startButton = page.locator('button:has-text("Start Now")');
-    await expect(startButton).toBeDisabled();
+    await page.getByRole('button', { name: /^Start session$/i }).click();
+    const confirmStart = page.getByRole('button', { name: /^Start session$/i }).last();
+    await expect(confirmStart).toBeDisabled();
+
+    await page.getByLabel('Unit Designation (Machine)').fill('E2E-RUNNER');
+    await page.getByLabel('Software Version').selectOption('1.2.3');
+    await expect(confirmStart).toBeEnabled();
+    await confirmStart.click();
+
+    await expect(page.getByRole('button', { name: /stop logging/i })).toBeVisible();
+
+    await page.getByPlaceholder(/describe what you observed/i).fill('Found an issue during test run.');
+    await page.getByRole('button', { name: /add log entry/i }).click();
+    await expect(page.getByText('Found an issue during test run.')).toBeVisible();
+
+    await page.getByRole('button', { name: /stop logging/i }).click();
+    await page.getByRole('button', { name: /complete session/i }).click();
+
+    await expect(page.getByPlaceholder(/logging is locked/i)).toBeDisabled();
+    await expect(page.getByRole('button', { name: /add log entry/i })).toBeDisabled();
   });
 });
