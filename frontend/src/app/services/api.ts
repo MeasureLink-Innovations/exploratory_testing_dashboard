@@ -23,7 +23,7 @@ export interface LogsResponse extends PaginatedResponse<any> {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = '/api';
 
   // Sessions
   getSessions(search?: string, limit = 20, offset = 0, sortBy = 'created_at', sortOrder = 'DESC', versionFilter?: string): Observable<SessionsResponse> {

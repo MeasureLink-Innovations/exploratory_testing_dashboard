@@ -50,14 +50,20 @@ docker compose up --build
 ```
 
 Services:
-- Frontend: `http://localhost:4200`
-- Backend API: `http://localhost:3000`
-- PostgreSQL: `localhost:5432`
+- Frontend (public): `http://localhost:4200`
+- Backend API (internal only): `backend:3000` (inside Docker network)
+- PostgreSQL (internal only): `db:5432` (inside Docker network)
 
 To inspect generated bootstrap admin credentials:
 
 ```bash
 docker compose logs backend
+```
+
+Verify network isolation (frontend reachable, backend/db hidden from host):
+
+```bash
+./scripts/verify-network-isolation.sh
 ```
 
 ### Option B — Manual local setup
