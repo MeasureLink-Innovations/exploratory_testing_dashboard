@@ -32,6 +32,32 @@ docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
 ./scripts/smoke-https.sh
 ```
 
+For production deployments using prebuilt images and bundled Nginx edge:
+
+1. Provide TLS certs in `certs/`:
+
+```bash
+mkdir -p certs
+# Use your real certificate files in production:
+# certs/fullchain.pem
+# certs/privkey.pem
+```
+
+For local validation only, you can generate temporary certs with mkcert:
+
+```bash
+mkcert -install
+mkcert -cert-file certs/fullchain.pem -key-file certs/privkey.pem localhost 127.0.0.1 ::1
+```
+
+```bash
+docker compose -f docker-compose.production.nginx.yml up -d
+./scripts/smoke-https.sh
+```
+
+Open the app at `https://localhost`.
+Do not use `http://localhost:443` (plain HTTP on the TLS port can return a 400-style bad request).
+
 See `docs/https-nginx-runbook.md` for cert setup (including mkcert), HSTS phases, and rollback.
 
 The backend automatically:

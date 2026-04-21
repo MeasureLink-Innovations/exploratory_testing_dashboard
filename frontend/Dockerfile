@@ -3,7 +3,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN --mount=type=secret,id=npmrc,target=/app/.npmrc npm ci
 
 COPY . .
 
