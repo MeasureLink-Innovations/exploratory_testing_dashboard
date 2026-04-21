@@ -23,6 +23,17 @@ This starts:
 - `backend` (Express API, internal-only network)
 - `frontend` (Angular app on `http://localhost:4200`, public)
 
+### HTTPS edge mode (Nginx)
+
+For HTTPS termination + 308 redirects via Nginx:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
+./scripts/smoke-https.sh
+```
+
+See `docs/https-nginx-runbook.md` for cert setup (including mkcert), HSTS phases, and rollback.
+
 The backend automatically:
 1. Runs Prisma migrations
 2. Bootstraps an initial admin user if none exists
@@ -93,6 +104,11 @@ NODE
    ```env
    PORT=3000
    DATABASE_URL=postgres://user:password@localhost:5432/exploratory_testing
+   TRUST_PROXY=false
+   HSTS_ENABLED=false
+   HSTS_MAX_AGE=300
+   HSTS_INCLUDE_SUBDOMAINS=false
+   HSTS_PRELOAD=false
    ```
 
 4. **Initialize Database**:

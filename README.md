@@ -18,6 +18,8 @@ It follows an Xray-inspired flow (**Mission → Charter → Session → Logs →
 - **Quick setup**: this README + [QUICKSTART.md](./QUICKSTART.md)
 - **System architecture + use cases**: [docs/architecture.md](./docs/architecture.md)
 - **Machine push endpoints**: [docs/API.md](./docs/API.md)
+- **HTTPS edge runbook (Nginx)**: [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
+- **Release notes**: [docs/release-notes.md](./docs/release-notes.md)
 - **Product context**: [PRD.md](./PRD.md)
 
 ## Screenshots
@@ -53,6 +55,16 @@ Services:
 - Frontend (public): `http://localhost:4200`
 - Backend API (internal only): `backend:3000` (inside Docker network)
 - PostgreSQL (internal only): `db:5432` (inside Docker network)
+
+Enable HTTPS edge mode (Nginx + 308 redirects + TLS certs):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
+./scripts/smoke-https.sh
+```
+
+For certificate setup and HSTS rollout details, see:
+- [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
 
 To inspect generated bootstrap admin credentials:
 
