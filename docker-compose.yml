@@ -6,8 +6,6 @@ services:
       POSTGRES_DB: exploratory_testing
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,6 +13,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - private
 
   backend:
     build:
@@ -30,12 +30,12 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://postgres:password@db:5432/exploratory_testing
       JWT_SECRET: exploratory-testing-dashboard-secret-key-123
-    ports:
-      - "3000:3000"
     command: >
       sh -c "npx prisma migrate deploy &&
              node scripts/bootstrap-admin.js &&
              npm run start"
+    networks:
+      - private
 
   frontend:
     build:
@@ -50,7 +50,10 @@ services:
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "4200:4200"
-    command: npm run start -- --host 0.0.0.0 --port 4200
+    command: npm run start -- --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json
+    networks:
+      - public
+      - private
 
 volumes:
   postgres_data:

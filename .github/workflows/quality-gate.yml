@@ -1,0 +1,85 @@
+name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Cancel stale runs for the same PR/branch so only the latest commit is validated.
+concurrency:
+  group: quality-gate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-playwright:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: |
+          if [ -f frontend/package-lock.json ]; then
+            npm --prefix frontend ci
+          else
+            npm --prefix frontend install
+          fi
+
+      - name: Install Playwright browsers and system deps
+        run: npx playwright install --with-deps
+
+      - name: Start frontend server
+        run: npm --prefix frontend run start -- --host 0.0.0.0 --port 4200 > /tmp/frontend.log 2>&1 &
+
+      # Playwright baseURL points to :4200 and config has no webServer block,
+      # so CI must wait explicitly for the app to become reachable.
+      - name: Wait for frontend readiness
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:4200 >/dev/null; then
+              echo "Frontend is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend did not become ready in time"
+          echo "--- frontend.log ---"
+          cat /tmp/frontend.log
+          exit 1
+
+      - name: Run Playwright tests
+        run: npm test
+
+      # Intentionally skipping backend tests: backend test script is currently a placeholder that exits 1.
+      # Add backend test execution here once real backend tests are implemented.
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

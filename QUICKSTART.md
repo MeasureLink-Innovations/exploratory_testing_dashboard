@@ -19,9 +19,9 @@ docker compose up --build
 ```
 
 This starts:
-- `db` (PostgreSQL, database `exploratory_testing`)
-- `backend` (Express API on `http://localhost:3000`)
-- `frontend` (Angular app on `http://localhost:4200`)
+- `db` (PostgreSQL, internal-only network)
+- `backend` (Express API, internal-only network)
+- `frontend` (Angular app on `http://localhost:4200`, public)
 
 ### HTTPS edge mode (Nginx)
 
@@ -73,6 +73,12 @@ docker compose logs backend
 Look for:
 - `USERNAME: admin`
 - `INITIAL PASSWORD: <generated-password>`
+
+Verify only frontend is reachable from host:
+
+```bash
+./scripts/verify-network-isolation.sh
+```
 
 ### Reset admin password in Docker (local/dev)
 
@@ -239,6 +245,6 @@ python test_push.py 1 ./logs/error.log log
 
 ## Troubleshooting
 
-- **CORS Errors**: Ensure the backend `PORT` matches the `apiUrl` in `frontend/src/app/services/api.ts`.
+- **API connectivity in Docker**: Frontend calls `/api` and proxies internally to `backend:3000`; do not expose backend port unless needed for debugging.
 - **Database Connection**: Verify your `DATABASE_URL` and ensure PostgreSQL is accepting local connections.
 - **Invalid admin credentials**: Re-run `node scripts/bootstrap-admin.js` (if no admin exists) or use the reset snippet above for local/dev.
