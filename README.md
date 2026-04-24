@@ -63,6 +63,13 @@ docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
 ./scripts/smoke-https.sh
 ```
 
+Production stack with Nginx included in one compose file:
+
+```bash
+docker compose -f docker-compose.production.nginx.yml up -d
+./scripts/smoke-https.sh
+```
+
 For certificate setup and HSTS rollout details, see:
 - [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
 

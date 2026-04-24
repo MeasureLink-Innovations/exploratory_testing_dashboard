@@ -200,3 +200,7 @@ playwright-report/
 .agents/
 get_accessibility.js
 .playwright-cli/
+
+.npmrc
+
+certs/

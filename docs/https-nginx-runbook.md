@@ -16,6 +16,7 @@ This runbook defines how the dashboard is exposed securely over HTTPS using **Ng
 ## Files in this repository
 
 - `docker-compose.nginx.yml` - Compose override adding Nginx edge service
+- `docker-compose.production.nginx.yml` - Production compose with Nginx edge included
 - `deploy/nginx/templates/default.conf.template` - Nginx config template
 - `scripts/smoke-https.sh` - HTTPS and redirect smoke checks
 - `scripts/check-cert-expiry.sh` - certificate expiry monitor script
@@ -25,7 +26,11 @@ This runbook defines how the dashboard is exposed securely over HTTPS using **Ng
 1. Provide certificate material:
    - `certs/fullchain.pem`
    - `certs/privkey.pem`
-2. Start stack with edge:
+2. Start production stack with edge:
+   ```bash
+   docker compose -f docker-compose.production.nginx.yml up -d
+   ```
+   For local/dev parity testing with source builds, use:
    ```bash
    docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
    ```

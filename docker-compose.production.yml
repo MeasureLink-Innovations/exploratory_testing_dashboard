@@ -17,11 +17,7 @@ services:
       - private
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      secrets:
-        - npmrc
+    image: ${BACKEND_IMAGE:-exploratory-testing-backend:latest}
     container_name: etd-backend
     depends_on:
       db:
@@ -38,16 +34,10 @@ services:
       - private
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      secrets:
-        - npmrc
+    image: ${FRONTEND_IMAGE:-exploratory-testing-frontend:latest}
     container_name: etd-frontend
     depends_on:
       - backend
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "4200:4200"
     command: npm run start -- --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json
@@ -63,7 +53,3 @@ networks:
   public:
   private:
     internal: true
-
-secrets:
-  npmrc:
-    file: .npmrc
