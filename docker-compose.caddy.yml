@@ -1,0 +1,27 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: etd-caddy
+    depends_on:
+      - frontend
+      - backend
+    environment:
+      ETD_DOMAIN: ${ETD_DOMAIN:-localhost}
+      HSTS_HEADER: ${HSTS_HEADER:-max-age=300}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  backend:
+    environment:
+      TRUST_PROXY: "1"
+      HSTS_ENABLED: "false"
+
+volumes:
+  caddy_data:
+  caddy_config:

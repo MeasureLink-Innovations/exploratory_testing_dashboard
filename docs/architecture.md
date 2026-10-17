@@ -62,10 +62,13 @@ Cross-cutting:
 
 ## 4) Runtime topology
 
-Containerized local stack (`docker-compose.yml`):
+Containerized stack (`docker-compose.yml`):
 - `db` (PostgreSQL)
-- `backend` (Express + migration/bootstrap command)
+- `backend` (Express + migration command)
 - `frontend` (Angular dev server)
+- Optional `docker-compose.caddy.yml` edge (Caddy automatic TLS and reverse proxy)
+
+Admin provisioning and password recovery are explicit backend CLI operations; credentials are not emitted during normal service startup.
 
 ## Data flow
 

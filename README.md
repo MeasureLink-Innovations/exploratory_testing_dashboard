@@ -18,7 +18,7 @@ It follows an Xray-inspired flow (**Mission → Charter → Session → Logs →
 - **Quick setup**: this README + [QUICKSTART.md](./QUICKSTART.md)
 - **System architecture + use cases**: [docs/architecture.md](./docs/architecture.md)
 - **Machine push endpoints**: [docs/API.md](./docs/API.md)
-- **HTTPS edge runbook (Nginx)**: [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
+- **HTTPS edge runbook (Caddy)**: [docs/https-caddy-runbook.md](./docs/https-caddy-runbook.md)
 - **Release notes**: [docs/release-notes.md](./docs/release-notes.md)
 - **Product context**: [PRD.md](./PRD.md)
 
@@ -56,20 +56,20 @@ Services:
 - Backend API: `http://localhost:3000`
 - PostgreSQL: `localhost:5432`
 
-Enable HTTPS edge mode (Nginx + 308 redirects + TLS certs):
+Enable HTTPS edge mode (Caddy + automatic TLS + HTTP-to-HTTPS redirects):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build -d
 ./scripts/smoke-https.sh
 ```
 
-For certificate setup and HSTS rollout details, see:
-- [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
+For local certificate trust, public certificate provisioning, and HSTS rollout details, see:
+- [docs/https-caddy-runbook.md](./docs/https-caddy-runbook.md)
 
-To inspect generated bootstrap admin credentials:
+The backend no longer bootstraps an admin at startup. Create one explicitly and capture the generated temporary password from the command output:
 
 ```bash
-docker compose logs backend
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend node scripts/bootstrap-admin.js
 ```
 
 ### Option B — Manual local setup
@@ -96,11 +96,13 @@ npm run migrate
 npm run dev
 ```
 
-Optional one-time admin bootstrap:
+One-time admin bootstrap:
 
 ```bash
 node scripts/bootstrap-admin.js
 ```
+
+For password recovery, run `node scripts/reset-admin-password.js` from `backend/`. Both commands print a generated temporary password, and the next login forces account setup.
 
 #### 2) Frontend
 
@@ -131,7 +133,7 @@ From repository root unless noted.
 
 - **Frontend can’t reach API**: verify backend is running on `:3000` and `frontend/src/app/services/api.ts` uses the expected base URL.
 - **Database errors during backend startup**: verify `DATABASE_URL` and ensure `exploratory_testing` DB exists.
-- **Login issues for first admin**: run `node scripts/bootstrap-admin.js` (manual) or inspect backend container logs (Docker).
+- **Login issues for first admin**: run `node scripts/bootstrap-admin.js` to create an admin, or `node scripts/reset-admin-password.js` to generate a temporary reset password. For Docker, run the relevant command with `docker compose exec backend`.
 - **No test scripts for backend package**: this is expected currently (`backend/package.json` has placeholder test script).
 
 ## Core use cases

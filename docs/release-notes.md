@@ -4,16 +4,16 @@
 
 ### Security
 
-- Added Nginx edge HTTPS deployment support with TLS termination and HTTP→HTTPS redirects using **308 Permanent Redirect**.
+- Added Caddy edge HTTPS deployment support with automatic public certificate issuance/renewal and HTTP→HTTPS redirects.
 - Added backend proxy-awareness controls (`TRUST_PROXY`) for correct behavior behind edge termination.
-- Added configurable HSTS support and phased rollout guidance.
+- Added configurable HSTS support and phased rollout guidance at the Caddy edge.
+- Changed initial admin creation to an explicit CLI operation and added generated temporary-password resets that require account setup on next login.
 
 ### Operations
 
 - Added HTTPS smoke checks via `scripts/smoke-https.sh`.
-- Added certificate expiry monitoring script `scripts/check-cert-expiry.sh` with 30/14/7-day thresholds.
-- Added `docs/https-nginx-runbook.md` with rollout, rollback, and environment configuration guidance.
+- Added `docs/https-caddy-runbook.md` with public/local TLS setup, HSTS rollout, and admin password operations.
 
 ### Developer Experience
 
-- Added local mkcert workflow guidance for trusted HTTPS development.
+- Added local HTTPS guidance using Caddy's local certificate authority.
