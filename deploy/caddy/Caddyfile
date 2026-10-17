@@ -1,0 +1,20 @@
+{$ETD_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "{$HSTS_HEADER}"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+	}
+
+	@api path /api /api/*
+	reverse_proxy @api backend:3000
+
+	@health path /health
+	reverse_proxy @health backend:3000
+
+	reverse_proxy frontend:4200 {
+		header_up Host localhost
+	}
+}

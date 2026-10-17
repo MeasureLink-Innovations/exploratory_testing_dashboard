@@ -18,7 +18,7 @@ It follows an Xray-inspired flow (**Mission → Charter → Session → Logs →
 - **Quick setup**: this README + [QUICKSTART.md](./QUICKSTART.md)
 - **System architecture + use cases**: [docs/architecture.md](./docs/architecture.md)
 - **Machine push endpoints**: [docs/API.md](./docs/API.md)
-- **HTTPS edge runbook (Nginx)**: [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
+- **HTTPS edge runbook (Caddy)**: [docs/https-caddy-runbook.md](./docs/https-caddy-runbook.md)
 - **Release notes**: [docs/release-notes.md](./docs/release-notes.md)
 - **Product context**: [PRD.md](./PRD.md)
 
@@ -52,31 +52,33 @@ docker compose up --build
 ```
 
 Services:
-- Frontend (public): `http://localhost:4200`
+- Frontend (localhost): `http://localhost:4200`
 - Backend API (internal only): `backend:3000` (inside Docker network)
 - PostgreSQL (internal only): `db:5432` (inside Docker network)
 
-Enable HTTPS edge mode (Nginx + 308 redirects + TLS certs):
+Enable HTTPS edge mode (Caddy + automatic TLS + HTTP-to-HTTPS redirects):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build -d
 ./scripts/smoke-https.sh
 ```
 
-Production stack with Nginx included in one compose file:
+For local certificate trust, public certificate provisioning, and HSTS rollout details, see:
+- [docs/https-caddy-runbook.md](./docs/https-caddy-runbook.md)
+
+Production stack with prebuilt images and Caddy-managed TLS:
 
 ```bash
-docker compose -f docker-compose.production.nginx.yml up -d
-./scripts/smoke-https.sh
+export ETD_DOMAIN=dashboard.example.com
+export JWT_SECRET=<your-persistent-random-secret>
+docker compose -f docker-compose.production.caddy.yml up -d
+BASE_HOST="$ETD_DOMAIN" HTTPS_URL="https://$ETD_DOMAIN" ./scripts/smoke-https.sh
 ```
 
-For certificate setup and HSTS rollout details, see:
-- [docs/https-nginx-runbook.md](./docs/https-nginx-runbook.md)
-
-To inspect generated bootstrap admin credentials:
+The backend no longer bootstraps an admin at startup. Create one explicitly and capture the generated temporary password from the command output:
 
 ```bash
-docker compose logs backend
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend node scripts/bootstrap-admin.js
 ```
 
 Verify network isolation (frontend reachable, backend/db hidden from host):
@@ -109,11 +111,13 @@ npm run migrate
 npm run dev
 ```
 
-Optional one-time admin bootstrap:
+One-time admin bootstrap:
 
 ```bash
 node scripts/bootstrap-admin.js
 ```
+
+For password recovery, run `node scripts/reset-admin-password.js` from `backend/`. Both commands print a generated temporary password, and the next login forces account setup.
 
 #### 2) Frontend
 
@@ -144,7 +148,7 @@ From repository root unless noted.
 
 - **Frontend can’t reach API**: verify backend is running on `:3000` and `frontend/src/app/services/api.ts` uses the expected base URL.
 - **Database errors during backend startup**: verify `DATABASE_URL` and ensure `exploratory_testing` DB exists.
-- **Login issues for first admin**: run `node scripts/bootstrap-admin.js` (manual) or inspect backend container logs (Docker).
+- **Login issues for first admin**: run `node scripts/bootstrap-admin.js` to create an admin, or `node scripts/reset-admin-password.js` to generate a temporary reset password. For Docker, run the relevant command with `docker compose exec backend`.
 - **No test scripts for backend package**: this is expected currently (`backend/package.json` has placeholder test script).
 
 ## Core use cases

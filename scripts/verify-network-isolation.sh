@@ -40,4 +40,4 @@ else
   pass "backend is NOT reachable from host at $BACKEND_URL"
 fi
 
-echo "\nAll checks passed. Frontend is public; backend + database are internal only."
+echo "\nAll checks passed. Frontend is reachable from localhost; backend + database are internal only."

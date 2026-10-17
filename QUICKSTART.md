@@ -18,61 +18,46 @@ From the project root:
 docker compose up --build
 ```
 
+Docker builds consume a root `.npmrc` file as a BuildKit secret. Create one with the credentials/configuration for your npm registry; for public-only dependencies, an empty file is sufficient. Keep registry tokens out of source control.
+
 This starts:
 - `db` (PostgreSQL, internal-only network)
 - `backend` (Express API, internal-only network)
-- `frontend` (Angular app on `http://localhost:4200`, public)
+- `frontend` (Angular app on `http://localhost:4200`, loopback only)
 
-### HTTPS edge mode (Nginx)
+Only the frontend is published to loopback for local development; the backend and database are private to the Compose network.
 
-For HTTPS termination + 308 redirects via Nginx:
+### HTTPS edge mode (Caddy)
+
+For HTTPS termination and automatic HTTP-to-HTTPS redirects via Caddy:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build -d
 ./scripts/smoke-https.sh
 ```
 
-For production deployments using prebuilt images and bundled Nginx edge:
+The default `ETD_DOMAIN=localhost` uses Caddy's local certificate authority. For public deployment, set `ETD_DOMAIN` to a DNS hostname pointing to the host; Caddy will obtain and renew a public certificate automatically. See `docs/https-caddy-runbook.md` for local trust, public TLS, and HSTS guidance.
 
-1. Provide TLS certs in `certs/`:
-
-```bash
-mkdir -p certs
-# Use your real certificate files in production:
-# certs/fullchain.pem
-# certs/privkey.pem
-```
-
-For local validation only, you can generate temporary certs with mkcert:
+For a production deployment using prebuilt images:
 
 ```bash
-mkcert -install
-mkcert -cert-file certs/fullchain.pem -key-file certs/privkey.pem localhost 127.0.0.1 ::1
+export ETD_DOMAIN=dashboard.example.com
+export JWT_SECRET=<your-persistent-random-secret>
+docker compose -f docker-compose.production.caddy.yml up -d
+BASE_HOST="$ETD_DOMAIN" HTTPS_URL="https://$ETD_DOMAIN" ./scripts/smoke-https.sh
 ```
+
+DNS must point to the Docker host and ports 80/443 must be reachable for public certificate issuance.
+
+The backend runs Prisma migrations on startup. Create the initial admin explicitly so the generated temporary password is printed only by the command you run:
 
 ```bash
-docker compose -f docker-compose.production.nginx.yml up -d
-./scripts/smoke-https.sh
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend node scripts/bootstrap-admin.js
 ```
 
-Open the app at `https://localhost`.
-Do not use `http://localhost:443` (plain HTTP on the TLS port can return a 400-style bad request).
+Capture the temporary password from a trusted terminal and deliver it securely; do not redirect it into shared logs.
 
-See `docs/https-nginx-runbook.md` for cert setup (including mkcert), HSTS phases, and rollback.
-
-The backend automatically:
-1. Runs Prisma migrations
-2. Bootstraps an initial admin user if none exists
-
-To get the initial admin password, check backend logs:
-
-```bash
-docker compose logs backend
-```
-
-Look for:
-- `USERNAME: admin`
-- `INITIAL PASSWORD: <generated-password>`
+### Reset admin password in Docker
 
 Verify only frontend is reachable from host:
 
@@ -80,36 +65,11 @@ Verify only frontend is reachable from host:
 ./scripts/verify-network-isolation.sh
 ```
 
-### Reset admin password in Docker (local/dev)
-
 ```bash
-docker compose exec backend node <<'NODE'
-const db = require('./db');
-const { hashPassword } = require('./services/auth.service');
-
-(async () => {
-  const username = 'admin';
-  const email = 'admin@system.internal';
-  const password = 'AdminTemp123!'; // change before running
-  const password_hash = await hashPassword(password);
-
-  const existing = await db.query('SELECT id FROM users WHERE is_admin = true ORDER BY id ASC LIMIT 1');
-  if (!existing.rows.length) throw new Error('No admin user found. Restart backend to run bootstrap.');
-
-  await db.query(
-    'UPDATE users SET username = $1, email = $2, password_hash = $3, must_change_password = true WHERE id = $4',
-    [username, email, password_hash, existing.rows[0].id]
-  );
-
-  console.log('Admin password reset complete.');
-  console.log(`username: ${username}`);
-  console.log(`password: ${password}`);
-  await db.pool.end();
-})();
-NODE
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend node scripts/reset-admin-password.js
 ```
 
-> The next login will require `/setup-account` (`must_change_password = true`).
+This generates a temporary password and forces account setup on the next login. Pass an admin username to reset a specific account.
 
 ---
 
@@ -150,11 +110,11 @@ NODE
    node scripts/bootstrap-admin.js
    ```
 
-   If no admin exists, this prints credentials like:
+   If no admin exists, this prints its generated temporary credential:
    - `USERNAME: admin`
-   - `INITIAL PASSWORD: <generated-password>`
+   - `INITIAL PASSWORD: <temporary-password>`
 
-   Save this password. On first login, you will be forced to set a new password.
+   Store it securely. On first login, you will be forced to set a new password. Bootstrap is no longer run automatically at backend startup.
 
 6. **Start the Server**:
    ```bash
@@ -162,38 +122,15 @@ NODE
    ```
    The API will be available at `http://localhost:3000`.
 
-### Resetting the initial admin password (local/dev)
+### Resetting an admin password (local/dev)
 
-If you lose the bootstrap password in local development, you can reset an existing admin user:
+If you lose an admin password, run the CLI script from the backend directory:
 
 ```bash
-node <<'NODE'
-const db = require('./db');
-const { hashPassword } = require('./services/auth.service');
-
-(async () => {
-  const username = 'admin';
-  const email = 'admin@system.internal';
-  const password = 'AdminTemp123!'; // change this before running
-  const password_hash = await hashPassword(password);
-
-  const existing = await db.query('SELECT id FROM users WHERE is_admin = true ORDER BY id ASC LIMIT 1');
-  if (!existing.rows.length) throw new Error('No admin user found. Run node scripts/bootstrap-admin.js first.');
-
-  await db.query(
-    'UPDATE users SET username = $1, email = $2, password_hash = $3, must_change_password = true WHERE id = $4',
-    [username, email, password_hash, existing.rows[0].id]
-  );
-
-  console.log('Admin password reset complete. Login with:');
-  console.log(`username: ${username}`);
-  console.log(`password: ${password}`);
-  await db.pool.end();
-})();
-NODE
+node scripts/reset-admin-password.js
 ```
 
-> This forces the admin through `/setup-account` on next login (`must_change_password = true`).
+The script prints a generated temporary password. An optional username argument selects a specific admin. The next login requires `/setup-account`.
 
 ---
 
@@ -247,4 +184,4 @@ python test_push.py 1 ./logs/error.log log
 
 - **API connectivity in Docker**: Frontend calls `/api` and proxies internally to `backend:3000`; do not expose backend port unless needed for debugging.
 - **Database Connection**: Verify your `DATABASE_URL` and ensure PostgreSQL is accepting local connections.
-- **Invalid admin credentials**: Re-run `node scripts/bootstrap-admin.js` (if no admin exists) or use the reset snippet above for local/dev.
+- **Invalid admin credentials**: Run `node scripts/reset-admin-password.js` from `backend/` or use the Docker command above.
