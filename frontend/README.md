@@ -12,6 +12,14 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+The shared palette is selected at client startup with `ETD_THEME=paper`, `ETD_THEME=warm-parchment`, or `ETD_THEME=slate` (default: `paper`). For example:
+
+```bash
+ETD_THEME=warm-parchment npm start
+```
+
+Light/Dark/Auto mode remains a preference stored separately in each browser.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:

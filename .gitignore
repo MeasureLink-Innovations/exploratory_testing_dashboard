@@ -87,6 +87,7 @@ web_modules/
 .env.local
 certs/
 caddy-local-root.crt
+frontend/public/runtime-config.override.json
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

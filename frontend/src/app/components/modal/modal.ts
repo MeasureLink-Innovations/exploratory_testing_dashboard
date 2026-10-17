@@ -11,11 +11,11 @@ import { Component, input, output } from '@angular/core';
 
           <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-          <div class="inline-block align-bottom bg-white dark:bg-gray-900 border-4 border-black dark:border-white rounded-none px-4 pt-5 pb-4 text-left overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)] transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div class="inline-block align-bottom bg-paper-surface border-4 border-ink-border rounded-none px-4 pt-5 pb-4 text-left overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)] transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
             <div>
               @if (title()) {
-                <div class="mb-6 border-b-2 border-black dark:border-white pb-2">
-                  <h3 class="text-2xl font-black uppercase tracking-tighter text-gray-900 dark:text-white" id="modal-title">{{ title() }}</h3>
+                <div class="mb-6 border-b-2 border-ink-border pb-2">
+                  <h3 class="text-2xl font-black uppercase tracking-tighter text-ink-primary" id="modal-title">{{ title() }}</h3>
                 </div>
               }
               <div class="mt-2">
