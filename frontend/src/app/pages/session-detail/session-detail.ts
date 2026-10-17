@@ -371,8 +371,9 @@ Add log entry
           class="transition-all focus-within:ring-2 focus-within:ring-black dark:focus-within:ring-white"
         />
         <div>
-          <label class="block text-xs font-black uppercase tracking-widest text-gray-900 dark:text-gray-100 mb-1.5">Software Version</label>
+          <label for="software-version" class="block text-xs font-black uppercase tracking-widest text-gray-900 dark:text-gray-100 mb-1.5">Software Version</label>
           <select
+            id="software-version"
             [value]="softwareVersion()"
             (change)="softwareVersion.set($any($event.target).value)"
             class="w-full px-3 py-2 min-h-11 bg-white dark:bg-gray-900 border-2 border-gray-900 dark:border-gray-100 rounded-none focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white focus:bg-gray-50 dark:focus:bg-gray-800 dark:text-white sm:text-sm transition-all"

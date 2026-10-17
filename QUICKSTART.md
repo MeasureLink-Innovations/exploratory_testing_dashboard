@@ -18,12 +18,14 @@ From the project root:
 docker compose up --build
 ```
 
-This starts:
-- `db` (PostgreSQL, database `exploratory_testing`)
-- `backend` (Express API on `http://localhost:3000`)
-- `frontend` (Angular app on `http://localhost:4200`)
+Docker builds consume a root `.npmrc` file as a BuildKit secret. Create one with the credentials/configuration for your npm registry; for public-only dependencies, an empty file is sufficient. Keep registry tokens out of source control.
 
-The database, backend, and frontend ports are bound to loopback for local development.
+This starts:
+- `db` (PostgreSQL, internal-only network)
+- `backend` (Express API, internal-only network)
+- `frontend` (Angular app on `http://localhost:4200`, loopback only)
+
+Only the frontend is published to loopback for local development; the backend and database are private to the Compose network.
 
 ### HTTPS edge mode (Caddy)
 
@@ -36,6 +38,17 @@ docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build -d
 
 The default `ETD_DOMAIN=localhost` uses Caddy's local certificate authority. For public deployment, set `ETD_DOMAIN` to a DNS hostname pointing to the host; Caddy will obtain and renew a public certificate automatically. See `docs/https-caddy-runbook.md` for local trust, public TLS, and HSTS guidance.
 
+For a production deployment using prebuilt images:
+
+```bash
+export ETD_DOMAIN=dashboard.example.com
+export JWT_SECRET=<your-persistent-random-secret>
+docker compose -f docker-compose.production.caddy.yml up -d
+BASE_HOST="$ETD_DOMAIN" HTTPS_URL="https://$ETD_DOMAIN" ./scripts/smoke-https.sh
+```
+
+DNS must point to the Docker host and ports 80/443 must be reachable for public certificate issuance.
+
 The backend runs Prisma migrations on startup. Create the initial admin explicitly so the generated temporary password is printed only by the command you run:
 
 ```bash
@@ -45,6 +58,12 @@ docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend no
 Capture the temporary password from a trusted terminal and deliver it securely; do not redirect it into shared logs.
 
 ### Reset admin password in Docker
+
+Verify only frontend is reachable from host:
+
+```bash
+./scripts/verify-network-isolation.sh
+```
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend node scripts/reset-admin-password.js
@@ -163,6 +182,6 @@ python test_push.py 1 ./logs/error.log log
 
 ## Troubleshooting
 
-- **CORS Errors**: Ensure the backend `PORT` matches the `apiUrl` in `frontend/src/app/services/api.ts`.
+- **API connectivity in Docker**: Frontend calls `/api` and proxies internally to `backend:3000`; do not expose backend port unless needed for debugging.
 - **Database Connection**: Verify your `DATABASE_URL` and ensure PostgreSQL is accepting local connections.
 - **Invalid admin credentials**: Run `node scripts/reset-admin-password.js` from `backend/` or use the Docker command above.

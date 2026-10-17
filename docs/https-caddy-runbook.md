@@ -24,6 +24,16 @@ docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build -d
 
 Caddy obtains and renews a publicly trusted certificate automatically. No certificate files or renewal cron job are needed. The domain must resolve to this host before Caddy can complete ACME validation.
 
+For deployment using prebuilt backend and frontend images, use the production stack instead. Set a strong `JWT_SECRET`, select the image tags if needed, and provide the public hostname:
+
+```bash
+export ETD_DOMAIN=dashboard.example.com
+export JWT_SECRET='<your-persistent-random-secret>'
+docker compose -f docker-compose.production.caddy.yml up -d
+```
+
+Set `JWT_SECRET` through the deployment's secret manager or another protected environment, and retain the same value across restarts so existing tokens remain valid. Do not commit it.
+
 Validate the redirect and application:
 
 ```bash
@@ -83,6 +93,13 @@ docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend \
   node scripts/bootstrap-admin.js
 ```
 
+For the prebuilt production stack, replace the Compose filenames in the command:
+
+```bash
+docker compose -f docker-compose.production.caddy.yml exec backend \
+  node scripts/bootstrap-admin.js
+```
+
 For manual backend development, run `node scripts/bootstrap-admin.js` from `backend/` after setting up the database. The command is idempotent and prints a password only when it creates an account. Capture it from a trusted terminal and deliver it using an approved secure channel; do not redirect it into shared logs. The initial login requires the admin to finish account setup and choose a new password.
 
 To reset the password for the first admin account:
@@ -91,6 +108,8 @@ To reset the password for the first admin account:
 docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend \
   node scripts/reset-admin-password.js
 ```
+
+For production, use `docker-compose.production.caddy.yml` in place of the two Compose file arguments above.
 
 Optionally pass an admin username to reset a specific account. Deliver the generated temporary password securely; the next login will again require account setup.
 

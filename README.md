@@ -52,9 +52,9 @@ docker compose up --build
 ```
 
 Services:
-- Frontend: `http://localhost:4200`
-- Backend API: `http://localhost:3000`
-- PostgreSQL: `localhost:5432`
+- Frontend (localhost): `http://localhost:4200`
+- Backend API (internal only): `backend:3000` (inside Docker network)
+- PostgreSQL (internal only): `db:5432` (inside Docker network)
 
 Enable HTTPS edge mode (Caddy + automatic TLS + HTTP-to-HTTPS redirects):
 
@@ -66,10 +66,25 @@ docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build -d
 For local certificate trust, public certificate provisioning, and HSTS rollout details, see:
 - [docs/https-caddy-runbook.md](./docs/https-caddy-runbook.md)
 
+Production stack with prebuilt images and Caddy-managed TLS:
+
+```bash
+export ETD_DOMAIN=dashboard.example.com
+export JWT_SECRET=<your-persistent-random-secret>
+docker compose -f docker-compose.production.caddy.yml up -d
+BASE_HOST="$ETD_DOMAIN" HTTPS_URL="https://$ETD_DOMAIN" ./scripts/smoke-https.sh
+```
+
 The backend no longer bootstraps an admin at startup. Create one explicitly and capture the generated temporary password from the command output:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.caddy.yml exec backend node scripts/bootstrap-admin.js
+```
+
+Verify network isolation (frontend reachable, backend/db hidden from host):
+
+```bash
+./scripts/verify-network-isolation.sh
 ```
 
 ### Option B — Manual local setup

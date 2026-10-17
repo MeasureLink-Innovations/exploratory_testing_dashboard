@@ -16,12 +16,27 @@ services:
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - public
+      - private
 
   backend:
     environment:
       TRUST_PROXY: "1"
       HSTS_ENABLED: "false"
+    networks:
+      - private
+
+  frontend:
+    networks:
+      - public
+      - private
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  public:
+  private:
+    internal: true

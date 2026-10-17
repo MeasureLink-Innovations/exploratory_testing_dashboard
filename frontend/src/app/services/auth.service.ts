@@ -21,7 +21,7 @@ export interface AuthResponse {
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = window.location.port === '4200' ? 'http://localhost:3000/api/auth' : '/api/auth';
+  private apiUrl = '/api/auth';
   private tokenKey = 'etd_auth_token';
   private userKey = 'etd_auth_user';
 

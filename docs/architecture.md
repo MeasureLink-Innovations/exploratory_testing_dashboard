@@ -66,7 +66,8 @@ Containerized stack (`docker-compose.yml`):
 - `db` (PostgreSQL)
 - `backend` (Express + migration command)
 - `frontend` (Angular dev server)
-- Optional `docker-compose.caddy.yml` edge (Caddy automatic TLS and reverse proxy)
+- Optional `docker-compose.caddy.yml` edge for source-built development
+- `docker-compose.production.caddy.yml` for prebuilt production images with Caddy automatic TLS and reverse proxy
 
 Admin provisioning and password recovery are explicit backend CLI operations; credentials are not emitted during normal service startup.
 

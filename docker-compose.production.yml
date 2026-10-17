@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: etd-db
+    environment:
+      POSTGRES_DB: exploratory_testing
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d exploratory_testing" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - private
+
+  backend:
+    image: ${BACKEND_IMAGE:-exploratory-testing-backend:latest}
+    container_name: etd-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://postgres:password@db:5432/exploratory_testing
+      JWT_SECRET: exploratory-testing-dashboard-secret-key-123
+    command: >
+      sh -c "npx prisma migrate deploy && npm run start"
+    networks:
+      - private
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-exploratory-testing-frontend:latest}
+    container_name: etd-frontend
+    depends_on:
+      - backend
+    ports:
+      - "4200:4200"
+    command: npm run start -- --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json
+    networks:
+      - public
+      - private
+
+volumes:
+  postgres_data:
+
+
+networks:
+  public:
+  private:
+    internal: true
