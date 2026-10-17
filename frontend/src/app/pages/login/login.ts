@@ -11,10 +11,10 @@ import { CardComponent } from '../../components/card/card';
   standalone: true,
   imports: [CommonModule, InputComponent, ButtonComponent, CardComponent],
   template: `
-    <div class="min-h-screen bg-gray-100 dark:bg-black flex items-center justify-center p-4">
+    <div class="min-h-screen bg-paper-bg flex items-center justify-center p-4">
       <app-card class="w-full max-w-md">
         <div class="mb-8 text-center">
-          <h1 class="text-3xl font-black uppercase tracking-tighter text-black dark:text-white mb-2">
+          <h1 class="text-3xl font-black uppercase tracking-tighter text-ink-primary mb-2">
             System Login
           </h1>
           <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">

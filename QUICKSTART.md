@@ -25,6 +25,8 @@ This starts:
 - `backend` (Express API, internal-only network)
 - `frontend` (Angular app on `http://localhost:4200`, loopback only)
 
+To set a palette for all users, add `ETD_THEME=paper`, `ETD_THEME=warm-parchment`, or `ETD_THEME=slate` to the repository-root `.env` file. Paper is the default. Re-run the same Compose command used to start the stack, adding `-d --force-recreate frontend`, to apply a change. Light/Dark/Auto remains a per-browser preference in the header.
+
 Only the frontend is published to loopback for local development; the backend and database are private to the Compose network.
 
 ### HTTPS edge mode (Caddy)
@@ -43,6 +45,7 @@ For a production deployment using prebuilt images:
 ```bash
 export ETD_DOMAIN=dashboard.example.com
 export JWT_SECRET=<your-persistent-random-secret>
+export ETD_THEME=slate
 docker compose -f docker-compose.production.caddy.yml up -d
 BASE_HOST="$ETD_DOMAIN" HTTPS_URL="https://$ETD_DOMAIN" ./scripts/smoke-https.sh
 ```

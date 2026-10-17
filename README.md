@@ -56,6 +56,8 @@ Services:
 - Backend API (internal only): `backend:3000` (inside Docker network)
 - PostgreSQL (internal only): `db:5432` (inside Docker network)
 
+Set `ETD_THEME` in the repository-root `.env` file to choose the palette shared by all users: `paper` (default), `warm-parchment`, or `slate`. Re-run the same Compose command used to start the stack, adding `-d --force-recreate frontend`, after changing it. Each browser can still choose Light, Dark, or Auto in the header.
+
 Enable HTTPS edge mode (Caddy + automatic TLS + HTTP-to-HTTPS redirects):
 
 ```bash

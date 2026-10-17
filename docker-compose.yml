@@ -46,6 +46,7 @@ services:
       - backend
     environment:
       CHOKIDAR_USEPOLLING: "true"
+      ETD_THEME: ${ETD_THEME:-paper}
     ports:
       - "127.0.0.1:4200:4200"
     command: npm run start -- --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json
